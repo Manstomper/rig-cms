@@ -1,0 +1,17 @@
+.mce-object {border:1px dotted #666; background:#eee}
+.mce-pagebreak {display:block; width:99%; height:5px; margin-top:15px; border:1px dashed #999; page-break-before:always; cursor:default}
+@media print {
+	.mce-pagebreak {border:0}
+}
+.mce-item-anchor {display:inline-block; padding:2px 5px; background:#eee; color:#333; border:1px dotted #666; font-size:12px; line-height:14px; -webkit-user-select:all; -webkit-user-modify:read-only; -moz-user-select:all; -moz-user-modify:read-only; user-select:all; user-modify:read-only; cursor:default}
+.mce-item-anchor::before {content:"[Anchor]"}
+.mce-nbsp, .mce-shy {background:#aaa}
+.mce-shy::after {content:"-"}
+hr {cursor:default}
+.mce-match-marker {background:#aaa; color:#fff}
+.mce-match-marker-selected {background:#39f; color:#fff}
+.mce-spellchecker-word {border-bottom:1px solid red; cursor:default}
+.mce-spellchecker-grammar {border-bottom:1px solid green; cursor:default}
+.mce-item-table, .mce-item-table td, .mce-item-table th, .mce-item-table caption {border:1px dashed #ccc}
+td.mce-item-selected, th.mce-item-selected {background-color:#39f !important}
+.mce-edit-focus {outline:1px dotted #666}

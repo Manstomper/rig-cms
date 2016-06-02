@@ -1,0 +1,55 @@
+{% extends 'admin/base.twig' %}
+
+{% block content %}
+	<div class="col-md-8 col-md-offset-2">
+		<table class="table table-condensed">
+			<thead><tr>
+				<th>Name</th>
+				<th>Email</th>
+				<th><span class="sr-only">Account active</span></th>
+				<th>Role</th>
+				<th class="text-center">Options</th>
+			</tr></thead>
+			<tbody>
+				{% for user in users %}
+					<tr{% if not user.is_active %} class="warning"{% endif %}>
+						<td>
+							<a href="{{ site.path }}/admin/user/compose/{{ user.id }}/">{{ user.name|default('[Anonymous]') }}</a>
+						</td>
+						<td>
+							{{ user.email }}
+						</td>
+						<td class="text-center">
+							{% if user.is_active %}
+								<span class="sr-only">Yes</span>
+							{% else %}
+								<span class="fa fa-eye-slash"></span><span class="sr-only">No</span>
+							{% endif %}
+						</td>
+						<td>
+							{{ user.role_name|replace({ 'ROLE_': '', '_': ' ' })|ucfirst }}
+						</td>
+						<td class="text-center">
+							<div class="dropdown">
+								<button class="btn btn-xs btn-default" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+									<span class="fa fa-caret-down"></span>
+								</button>
+								<ul class="dropdown-menu">
+									<li><a href="{{ site.path }}/admin/user/compose/{{ user.id }}/"><span class="fa fa-fw fa-pencil"></span> Edit</a></li>
+									{% if user.role_id > 1 %}
+										<li><a href="{{ site.path }}/admin/user/delete/{{ user.id }}/"><span class="fa fa-fw fa-trash"></span> Delete</a></li>
+									{% endif %}
+								</ul>
+							</div>
+						</td>
+					</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		{% if numPages > 1 %}
+			{% include 'pagination.twig' with { path: site.path ~ '/admin/user/' } %}
+		{% endif %}
+	</div>
+{% endblock %}
+
+{% block title %}Users{% endblock %}

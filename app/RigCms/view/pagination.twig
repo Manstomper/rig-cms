@@ -1,0 +1,51 @@
+{% if numPages > 4 and page + 3 > numPages %}
+	{% set start = numPages - 4 %}
+	{% set end = numPages %}
+{% elseif numPages > 4 and page - 2 > 1 %}
+	{% set start = page - 2 %}
+	{% set end = start + 4 %}
+{% elseif numPages <= 4  %}
+	{% set start = 1 %}
+	{% set end = numPages %}
+{% else %}
+	{% set start = 1 %}
+	{% set end = 5 %}
+{% endif %}
+{% if path is not defined %}
+	{% set path = site.path ~ app.request.pathinfo %}
+	{% set separator = '?' %}
+{% else %}
+	{% set params = query_params() %}
+	{% set path = path ~ params %}
+	{% set separator = params ? '&' : '?' %}
+{% endif %}
+{% set options = {
+	first: options.first|default('First'),
+	last: options.last|default('Last'),
+	next: options.next|default(false),
+	previous: options.previous|default(false),
+	class: options.class|default('pagination'),
+} %}
+<ul class="{{ options.class }}" aria-label="Pagination">
+{% if start > 1 and options.first %}
+	<li><a href="{{ path }}">{{ options.first }}</a></li>
+{% endif %}
+{% if page > 1 and options.previous %}
+	<li><a href="{{ path }}{% if page > 2 %}{{ separator }}page={{ page - 1 }}{% endif %}">{{ options.previous }}</a></li>
+{% endif %}
+{% for i in start..end %}
+{% if i == page %}
+	<li class="active" aria-label="Current page: {{ i }}"><a role="presentation">{{ i }}</a></li>
+{% elseif i == 1 %}
+	<li><a href="{{ path }}">{{ i }}</a></li>
+{% else %}
+	<li><a href="{{ path }}{{ separator }}page={{ i }}">{{ i }}</a></li>
+{% endif %}
+{% endfor %}
+{% if page < end and options.next %}
+	<li><a href="{{ path }}{{ separator }}page={{ page + 1 }}">{{ options.next }}</a></li>
+{% endif %}
+{% if end < numPages and options.last %}
+	<li><a href="{{ path }}{{ separator }}page={{ numPages }}">{{ options.last }}</a></li>
+{% endif %}
+</ul>

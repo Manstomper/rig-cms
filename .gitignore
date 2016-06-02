@@ -1,0 +1,12 @@
+/dev/
+/vendor/
+/web/dst/
+/web/files/
+/web/img/
+/web/themes/
+/vendor/
+app/config.php
+composer.json
+composer.lock
+composer.phar
+Thumbs.db

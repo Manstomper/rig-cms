@@ -1,0 +1,1 @@
+Your position at {{ site.name }} has been changed to {{ role|replace({ 'ROLE_': '' })|ucfirst }}.{% if status_changed or not account_active %} Your account is {% if account_active %}active{% else %}inactive and must be activated by an administrator{% endif %}.{% endif %}

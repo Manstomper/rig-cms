@@ -1,0 +1,87 @@
+{% extends 'admin/base.twig' %}
+
+{% block content %}
+	<div class="col-md-12">
+		<form class="form multi-form" action="" method="post">
+			<table class="table table-condensed table-hover">
+				<thead><tr>
+					<th>Author</th>
+					<th>Message</th>
+					<th><span class="sr-only">Approved</span></th>
+					<th>Date</th>
+					<th>Article</th>
+					<th class="text-center">Options</th>
+					<th><input class="checkbox" type="checkbox" role="presentation" data-checkall="1"></th>
+				</tr></thead>
+				<tbody>
+					{% for comment in comments %}
+						<tr{% if not comment.visible %} class="warning"{% endif %}>
+							<td>
+								{{ comment.author }}
+							</td>
+							<td>
+								<a href="{{ site.path }}/admin/comment/compose/{{ comment.id }}/" aria-label="Edit">{{ comment.body|concat(70) }}</a>
+							</td>
+							<td class="text-center">
+								{% if comment.visible %}
+									<span class="sr-only">Yes</span>
+								{% else %}
+									<span class="fa fa-eye-slash"></span><span class="sr-only">No</span>
+								{% endif %}
+							</td>
+							<td class="nowrap">
+								{{ comment.date|date('M j Y') }}
+							</td>
+							<td>
+								<a href="{{ site.path }}/id/{{ comment.article_id }}" target="_blank">{{ comment.article_title|concat(30) }}</a>
+							</td>
+							<td class="text-center">
+								<div class="dropdown">
+									<button class="btn btn-default btn-xs" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+										<span class="fa fa-caret-down"></span>
+									</button>
+									<ul class="dropdown-menu">
+										<li>
+											<a href="{{ site.path }}/admin/comment/moderate/{{ comment.id }}/">
+												{% if comment.visible == 0 %}
+													<span class="fa fa-fw fa-check"></span> Approve
+												{% else %}
+													<span class="fa fa-fw fa-eye-slash"></span> Hide
+												{% endif %}
+											</a>
+										</li>
+										<li role="presentation">
+											<a href="{{ site.path }}/admin/comment/compose/{{ comment.id }}/"><span class="fa fa-fw fa-pencil"></span> Edit</a>
+										</li>
+										<li>
+											<a href="{{ site.path }}/admin/comment/delete/{{ comment.id }}/"><span class="fa fa-fw fa-trash"></span> Delete</a>
+										</li>
+									</ul>
+								</div>
+							</td>
+							<td class="text-center">
+								<input class="checkbox" type="checkbox" name="id[]" value="{{ comment.id }}">
+							</td>
+						</tr>
+					{% else %}
+						<tr><td colspan="7">No results.</td></tr>
+					{% endfor %}
+				</tbody>
+			</table>
+			<div class="form-inline pull-right multi-action">
+				<select class="form-control" name="action" aria-label="With selected...">
+					<option value="" role="presentation">With selected...</option>
+					<option value=""></option>
+					<option value="moderate">Moderate</option>
+					<option value="delete">Delete</option>
+				</select>
+				<button class="btn btn-success" type="submit">Submit</button>
+			</div>
+		</form>
+		{% if numPages > 1 %}
+			{% include 'pagination.twig' with { path: site.path ~ '/admin/comment/' } %}
+		{% endif %}
+	</div>
+{% endblock %}
+
+{% block title %}Comments{% endblock %}

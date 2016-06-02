@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<atom:link href="{{ site.path }}/rss" rel="self" type="application/rss+xml"/>
+		<title>{{ site.name }}</title>
+		<description>{{ site.description }}</description>
+		<link>{{ site.path }}</link>
+		<lastBuildDate>{{ articles.0.date|default(date()|date('r'))|date('r') }}</lastBuildDate>
+		<ttl>1440</ttl>
+		{% for article in articles %}
+		<item>
+			<title>{{ article.title }}</title>
+			{% set readmore = '<a href="' ~ site.path ~ '/' ~ article.slug ~ '">Read more...</a>' %}
+			<description>{% if article.excerpt %}{{ article.excerpt|htmlspecialchars }} {{ readmore|htmlspecialchars }}{% else %}{{ article.body|htmlspecialchars }}{% endif %}</description>
+			<link>{{ site.path }}/{{ article.slug }}</link>
+			<guid isPermaLink="true">{{ site.path }}/{{ article.slug }}</guid>
+			<pubDate>{{ article.date|date('r') }}</pubDate>
+		</item>
+		{% endfor %}
+	</channel>
+</rss>

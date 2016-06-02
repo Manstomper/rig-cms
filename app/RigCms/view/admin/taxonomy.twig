@@ -1,0 +1,81 @@
+{% extends 'admin/base.twig' %}
+
+{% block content %}
+	<div class="col-md-8 col-md-offset-2">
+		<table class="table table-condensed table-hover">
+			<thead><tr>
+				<th>Name</th>
+				<th>Slug</th>
+				<th>Order</th>
+				<th>On front page</th>
+				<th>Syndicate</th>
+				<th class="text-center">Options</th>
+			</tr></thead>
+			<tbody>
+				{% import _self as macro %}
+				{% if numPages > 1 or app.request.get('orderby') %}
+					{% for tax in taxonomyList %}
+						{{ macro.row(tax, 0) }}
+					{% endfor %}
+				{% else %}
+					{{ macro.tree(taxonomyList, null, 0) }}
+				{% endif %}
+			</tbody>
+		</table>
+		{% if numPages > 1 %}
+				{% include 'pagination.twig' with { path: site.path ~ '/admin/taxonomy/' } %}
+		{% endif %}
+	</div>
+{% endblock %}
+
+{% macro row(tax, level) %}
+	<tr>
+		<td class="branch branch{{ level }}">
+			<a href="{{ site.path }}/admin/taxonomy/compose/{{ tax.id }}/" aria-label="Edit">{{ tax.name|default('[Untitled]') }}</a>
+		</td>
+		<td>
+			{{ tax.slug }}
+		</td>
+		<td class="text-center">
+			{{ tax.hierarchy }}
+		</td>
+		<td class="text-center">
+			{% if tax.is_default %}
+				<span class="fa fa-check" aria-label="Yes"></span>
+			{% else %}
+				<span class="sr-only">No</span>
+			{% endif %}
+		</td>
+		<td class="text-center">
+			{% if tax.syndicate %}
+				<span class="fa fa-check" aria-label="Yes"></span>
+			{% else %}
+				<span class="sr-only">No</span>
+			{% endif %}
+		</td>
+		<td class="text-center">
+			<div class="dropdown">
+				<button class="btn btn-default btn-xs" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					<span class="fa fa-caret-down"></span>
+				</button>
+				<ul class="dropdown-menu">
+					<li role="presentation"><a href="{{ site.path }}/admin/taxonomy/compose/{{ tax.id }}/"><span class="fa fa-fw fa-pencil"></span> Edit</a></li>
+					<li><a href="{{ site.path }}/admin/taxonomy/delete/{{ tax.id }}/"><span class="fa fa-fw fa-trash"></span> Delete</a></li>
+				</ul>
+			</div>
+		</td>
+	</tr>
+{% endmacro %}
+
+{% macro tree(taxonomy, id, level) %}
+	{% for tax in taxonomy %}
+		{% if tax.parent_id == id %}
+			{% set current_level = tax.parent_id ? level + 1 : level %}
+			{% import _self as macro %}
+			{{ macro.row(tax, current_level) }}
+			{{ macro.tree(taxonomy, tax.id, current_level) }}
+		{% endif %}
+	{% endfor %}
+{% endmacro %}
+
+{% block title %}Sections{% endblock %}

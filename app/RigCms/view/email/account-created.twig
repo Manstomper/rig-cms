@@ -1,0 +1,6 @@
+An account has been created for you at {{ site.name }}.
+
+Username: {{ username }}
+Password: {{ password }}
+
+{% if account_active  %}You can sign in at {{ site.path }}/login/ and change your password at {{ site.path }}/reset-password/.{% else %}Your account is currently inactive. You will be notified when it has been activated.{% endif %}

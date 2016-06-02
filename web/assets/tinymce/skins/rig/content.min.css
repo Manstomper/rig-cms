@@ -1,0 +1,17 @@
+body {background-color:#fff; color:#333; font-family:"Open Sans", Verdana, Arial, Helvetica, sans-serif; font-size:14px}
+.mce-object {background:#eee url("object.png") no-repeat center center; border:1px solid #ddd}
+.mce-pagebreak {display:block; width:99%; height:5px; margin-top:15px; border:1px dotted #999; page-break-before:always; cursor:default}
+@media print {
+	.mce-pagebreak {border:0}
+}
+.mce-item-anchor {display:inline-block; width:16px; height:16px; background:url("anchor.png") no-repeat center center; -webkit-user-select:all; -webkit-user-modify:read-only; -moz-user-select:all; -moz-user-modify:read-only; user-select:all; user-modify:read-only; vertical-align:-15%; cursor:default}
+.mce-nbsp, .mce-shy {background:#aaa}
+.mce-shy::after {content:"-"}
+hr {cursor:default}
+.mce-match-marker {background:#aaa; color:#fff}
+.mce-match-marker-selected {background:#39f; color:#fff}
+.mce-spellchecker-word {border-bottom:1px solid red; cursor:default}
+.mce-spellchecker-grammar {border-bottom:1px solid green; cursor:default}
+.mce-item-table, .mce-item-table td, .mce-item-table th, .mce-item-table caption {border:1px dashed #ccc}
+td.mce-item-selected, th.mce-item-selected {background-color:#39f !important}
+.mce-edit-focus {outline:1px dotted #666}

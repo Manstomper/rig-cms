@@ -1,0 +1,155 @@
+{% extends 'admin/base.twig' %}
+
+{% block content %}
+	<form id="article-form" class="form" method="post" action="" accept-charset="utf-8" data-watch="1">
+		<div class="col-md-10">
+			<div class="row">
+				<label class="form-group col-md-6">Title
+					<input class="form-control" type="text" name="title" value="{{ article.title }}"{% if article.invalid.title is defined %} aria-invalid="true"{% endif %}>
+				</label>
+				<label class="form-group col-md-6">Slug
+					<input class="form-control" type="text" name="slug" value="{{ article.slug }}"{% if article.invalid.slug is defined %} aria-invalid="true"{% endif %}>
+				</label>
+			</div>
+			<label class="form-group">Body
+				<textarea class="form-control tall" name="body" data-codeallowed="1" {% if article.invalid.body is defined %} aria-invalid="true"{% endif %}>{{ article.body|htmlspecialchars }}</textarea>
+			</label>
+			<label class="form-group">Excerpt
+				<textarea class="form-control" name="excerpt">{{ article.excerpt }}</textarea>
+			</label>
+			<fieldset>
+				<legend>Meta</legend>
+				<div id="meta-list">
+					{% set i = 0 %}
+					{% for key, val in article.meta %}
+						{% if key != 'comments_disabled' %}
+							<div class="row form-group">
+								<label class="col-md-5">Key
+									<input class="form-control" type="text" name="meta[{{ i }}][key]" value="{{ key }}">
+								</label>
+								<label class="col-md-7">Value
+									<input class="form-control" type="text" name="meta[{{ i }}][val]" value="{{ val }}">
+								</label>
+							</div>
+							{% set i = i + 1 %}
+						{% endif %}
+					{% endfor %}
+				</div>
+				<button class="btn btn-default" type="button" data-template="#meta" data-appendto="#meta-list">
+					<span class="fa fa-plus-square"></span> New meta
+				</button>
+			</fieldset>
+			<template id="meta">
+				{% verbatim %}
+					<div class="row form-group">
+							<label class="col-md-5">Key
+								<input class="form-control" type="text" name="meta[{{i}}][key]">
+							</label>
+							<label class="col-md-7">Value
+								<input class="form-control" type="text" name="meta[{{i}}][val]">
+							</label>
+					</div>
+				{% endverbatim %}
+			</template>
+		</div>
+		<div class="col-md-2">
+			<div class="form-group">
+				<fieldset id="taxonomy-list">
+					<legend>Sections</legend>
+					<ul class="list-unstyled">
+						{% import _self as macro %}
+						{{ macro.tree(taxonomyList, null) }}
+					</ul>
+					{% if is_granted('ROLE_ADMIN') %}
+						<button class="btn btn-default" type="button" data-toggle="modal" data-target="#taxonomy-modal">
+							<span class="fa fa-plus-square"></span> New section
+						</button>
+					{% endif %}
+				</fieldset>
+			</div>
+			<label class="form-group">Date
+				<input class="form-control" type="text" name="date" value="{{ article.date }}" required{% if article.invalid.date is defined %} aria-invalid="true"{% endif %}>
+			</label>
+			<label class="form-group">Expires
+				<input class="form-control" type="text" name="expires" value="{{ article.expires }}"{% if article.invalid.expires is defined %} aria-invalid="true"{% endif %}>
+			</label>
+			<label class="form-group">Visibility
+				<select class="form-control" name="role_id"{% if article.invalid.role_id is defined %} aria-invalid="true"{% endif %}>
+					{% for role in get_roles() %}
+						<option value="{{ role.id }}"{% if article.role_id == role.id %} selected{% endif %}>{{ role.name|replace({ 'ROLE_': '' })|ucfirst }}</option>
+					{% endfor %}
+					<option value=""{% if not article.role_id %} selected{% endif %}>Public</option>
+				</select>
+			</label>
+			<div class="checkbox">
+				<label>
+					{% if article.meta.comments_disabled is defined or article.id == null and user().meta.comments_disabled is defined %}
+						{% set checked = ' checked' %}
+					{% endif %}
+					<input class="checkbox" type="checkbox" name="meta[comments_disabled]"{{ checked|default('') }}> Disallow comments
+				</label>
+			</div>
+			<div class="form-group">
+				<button class="btn btn-block btn-success" type="submit">Save</button>
+			</div>
+		</div>
+	</form>
+
+	{% if is_granted('ROLE_ADMIN') %}
+		<div id="taxonomy-modal" class="modal" role="dialog">
+			<div class="modal-dialog" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close fa fa-times" data-dismiss="modal" aria-label="Close"></button>
+						<h1 class="modal-title">Create section</h1>
+					</div>
+					<div class="modal-body">
+						{% include 'admin/partial/taxonomy-form.twig' %}
+					</div>
+				</div>
+			</div>
+		</div>
+		{% verbatim %}
+			<template id="taxonomy-field">
+				<li><div class="checkbox"><label><input class="checkbox" type="checkbox" name="taxonomy[]" value="{{id}}" checked>{{name}} </label></div></li>
+			</template>
+		{% endverbatim %}
+	{% endif %}
+{% endblock %}
+
+{% macro tree(arr, id) %}
+	{% for val in arr %}
+	{% if val.parent_id == id %}
+		{% import _self as macro %}
+		{% set children = macro.tree(arr, val.id) %}
+		<li>
+			<div class="checkbox">
+				<label><input class="checkbox" type="checkbox" name="taxonomy[]" value="{{ val.id }}"{% if val.article_id %} checked{% endif %}> {{ val.name }}</label>
+			</div>
+			{% if children %}
+				<ul class="list-unstyled">
+					{{ children }}
+				</ul>
+			{% endif %}
+		</li>
+		{% endif %}
+	{% endfor %}
+{% endmacro %}
+
+{% block styles %}
+	{% if user().meta.editor|default() == 'codemirror' %}
+		<link rel="stylesheet" href="{{ site.asset_path }}/assets/codemirror/codemirror.min.css">
+	{% endif %}
+	{{ parent() }}
+{% endblock %}
+
+{% block javascripts %}
+	{% if user().meta.editor|default() == 'codemirror' %}
+		<script src="{{ site.asset_path }}/assets/codemirror/codemirror.min.js"></script>
+	{% elseif user().meta.editor|default() == 'tinymce' %}
+		<script src="{{ site.asset_path }}/assets/tinymce/tinymce.min.js"></script>
+	{% endif %}
+	{{ parent() }}
+{% endblock %}
+
+{% block title %}{% if article.id %}Edit article {{ article.title }}{% else %}New article{% endif %}{% endblock %}

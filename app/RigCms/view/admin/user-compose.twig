@@ -1,0 +1,58 @@
+{% extends 'admin/base.twig' %}
+
+{% block content %}
+	<form id="user-form" class="col-md-4 col-md-offset-4" method="post" action="" accept-charset="utf-8" data-watch="1">
+		<label class="form-group">Name
+			<input class="form-control" type="text" name="name" value="{{ user.name }}" required{% if user.invalid.name is defined %} aria-invalid="true"{% endif %}>
+		</label>
+		<label class="form-group">Email
+			<input class="form-control" type="email" name="email" value="{{ user.email }}" required{% if user.invalid.email is defined %} aria-invalid="true"{% endif %}>
+		</label>
+		{% if not user.id %}
+			<label class="form-group">Password
+				<input class="form-control" type="password" name="password" required{% if user.invalid.password is defined %} aria-invalid="true"{% endif %}>
+			</label>
+		{% endif %}
+		{% if is_granted('ROLE_ADMIN') and not is_last_admin %}
+			<label class="form-group">Role
+				<select class="form-control" name="role_id"{% if user.invalid.role_id is defined %} aria-invalid="true"{% endif %}>
+					{% for role in get_roles() %}
+						<option value="{{ role.id }}"{% if user.role_id|default(3) == role.id %} selected{% endif %}>{{ role.name|replace({ 'ROLE_': '' })|ucfirst }}</option>
+					{% endfor %}
+				</select>
+			</label>
+		{% endif %}
+		{% if user.id and user.role_id >= 2 %}
+			<div class="checkbox">
+				<label>
+					<input id="account-active" class="checkbox" type="checkbox" name="is_active"{% if user.is_active %} checked{% endif %}> Account is active
+					{% if not is_granted('ROLE_ADMIN') %}
+						<p id="account-warning" class="alert alert-warning">You will be signed out and your account can only be reactivated by an administrator.</p>
+					{% endif %}
+				</label>
+			</div>
+		{% endif %}
+		{% if user.id and user.role_id <= 2 %}
+			<fieldset>
+				<legend>Settings</legend>
+				<label class="form-group">Text editor
+					<select class="form-control" name="meta[editor]">
+						<option value="none"{% if user.meta.editor|default() == 'none' %} selected{% endif %}></option>
+						<option value="tinymce"{% if user.meta.editor|default() == 'tinymce' %} selected{% endif %}>TinyMCE</option>
+						<option value="codemirror"{% if user.meta.editor|default() == 'codemirror' %} selected{% endif %}>CodeMirror</option>
+					</select>
+				</label>
+				<div class="checkbox">
+					<label>
+						<input type="checkbox" name="meta[comments_disabled]"{% if user.meta.comments_disabled is defined %} checked{% endif %}> Disallow comments
+					</label>
+				</div>
+			</fieldset>
+		{% endif %}
+		<div class="form-group">
+			<button class="btn btn-success" type="submit">Save</button>
+		</div>
+	</form>
+{% endblock %}
+
+{% block title %}{% if user.id %}Edit user {{ user.name }}{% else %}New user{% endif %}{% endblock %}

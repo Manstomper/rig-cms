@@ -1,0 +1,43 @@
+{% extends 'admin/base.twig' %}
+
+{% block content %}
+	<form id="comment-form" class="col-md-6 col-md-offset-3" method="post" action="" accept-charset="utf-8" data-watch="1">
+		<label class="form-group">Name
+			<input class="form-control" type="text" name="author" value="{{ comment.author }}" required{% if comment.invalid.author is defined %} aria-invalid="true"{% endif %}>
+		</label>
+		<label class="form-group">Email
+			<input class="form-control" type="email" name="email" value="{{ comment.email }}" required{% if comment.invalid.email is defined %} aria-invalid="true"{% endif %}>
+		</label>
+		<label class="form-group">Comment
+			<textarea class="form-control tall" name="body" data-codeallowed="1" required{% if comment.invalid.body is defined %} aria-invalid="true"{% endif %}>{{ comment.body }}</textarea>
+		</label>
+		<div class="checkbox">
+			<label>
+				<input class="checkbox" type="checkbox" name="visible"{% if comment.visible == 1 %} checked{% endif %}> Visible
+			</label>
+		</div>
+		<input type="hidden" name="date" value="{{ comment.date }}">
+		<input type="hidden" name="article_id" value="{{ comment.article_id }}">
+		<div class="form-group">
+			<button class="btn btn-success" type="submit">Save</button>
+		</div>
+	</form>
+{% endblock %}
+
+{% block styles %}
+	{% if user().meta.editor|default() == 'codemirror' %}
+		<link rel="stylesheet" href="{{ site.asset_path }}/assets/codemirror/codemirror.min.css">
+	{% endif %}
+	{{ parent() }}
+{% endblock %}
+
+{% block javascripts %}
+	{% if user().meta.editor|default() == 'codemirror' %}
+		<script src="{{ site.asset_path }}/assets/codemirror/codemirror.min.js"></script>
+	{% elseif user().meta.editor|default() == 'tinymce' %}
+		<script src="{{ site.asset_path }}/assets/tinymce/tinymce.min.js"></script>
+	{% endif %}
+	{{ parent() }}
+{% endblock %}
+
+{% block title %}Edit comment{% endblock %}

@@ -1,0 +1,9 @@
+{% extends 'admin/base.twig' %}
+
+{% block content %}
+	<div class="col-md-4 col-md-offset-4">
+		{% include 'admin/partial/taxonomy-form.twig' %}
+	</div>
+{% endblock %}
+
+{% block title %}{% if taxonomy.id %}Edit section {{ taxonomy.name }}{% else %}New section{% endif %}{% endblock %}

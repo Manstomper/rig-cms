@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{% block title %}{% endblock %}{% if block('title') is not empty %} | {% endif %}{% if page|default(1) > 1 %} Page {{ page }} | {% endif %}SilexBasedCMS</title>
+{% block styles %}
+<link rel="stylesheet" href="{{ site.asset_path }}/assets/font-awesome/css/font-awesome.min.css">
+<link rel="stylesheet" href="{{ site.asset_path }}/assets/bootstrap/css/bootstrap.min.css">
+<link rel="stylesheet" href="{{ site.asset_path }}/assets/admin.min.css">
+{% endblock %}
+{% block javascripts %}
+<script src="{{ site.asset_path }}/assets/jquery/jquery-2.2.3.min.js"></script>
+<script src="{{ site.asset_path }}/assets/bootstrap/js/bootstrap.min.js"></script>
+<script src="{{ site.asset_path }}/assets/admin.min.js"></script>
+{% endblock %}
+</head>
+<body>
+
+{% block nav %}
+	{% include 'admin/partial/navigation.twig' %}
+{% endblock %}
+
+<div id="flash-messages">
+	{% for label, messages in app.session.flashbag.all %}
+		{% for message in messages %}
+			<p class="alert alert-{% if label == 'error' %}danger{% else %}info{% endif %} alert-dismissible" role="alert">
+				<button type="button" class="fa fa-times close" data-dismiss="alert" aria-label="Close"></button>
+				{% if label == 'error' %}<span class="fa fa-lg fa-fw fa-exclamation-triangle"></span>{% endif %}
+				{{ message }}
+			</p>
+		{% endfor %}
+	{% endfor %}
+</div>
+
+<div class="container main">
+	{% block content %}{% endblock %}
+</div>
+
+</body>
+</html>

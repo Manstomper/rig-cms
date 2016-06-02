@@ -1,0 +1,16 @@
+{% extends 'admin/base.twig' %}
+
+{% block content %}
+	<div class="col-md-12">
+		<h1>Error {{ code }}</h1>
+		<p>
+			{% if code == 401 or code == 403 %}
+				Access denied.
+			{% else %}
+				{{ message }}
+			{% endif %}
+		</p>
+	</div>
+{% endblock %}
+
+{% block title %}Error {{ code }}{% endblock %}

@@ -1,0 +1,121 @@
+{% extends 'admin/base.twig' %}
+
+{% block content %}
+	<div class="col-md-8 col-md-offset-1">
+		<form class="form multi-form" action="{{ site.path }}/admin/article/multiedit/" method="post">
+			<table class="table table-condensed table-hover">
+				<thead><tr>
+					<th>Title</th>
+					<th>Date</th>
+					<th>Author</th>
+					<th class="text-center">Options</th>
+					<th>
+						{% if is_granted('ROLE_ADMIN') and articles %}
+							<input class="checkbox" type="checkbox" role="presentation" data-checkall="1">
+						{% endif %}
+					</th>
+				</tr></thead>
+				<tbody>
+					{% for article in articles %}
+						{% if is_granted('ROLE_ADMIN') or article.user_id == user().id %}
+							{% set can_edit = true %}
+						{% else %}
+							{% set can_edit = false %}
+						{% endif %}
+						<tr{% if article.role_id %} class="warning"{% endif %}>
+							<td>
+								{% if can_edit %}
+									<a href="{{ site.path }}/admin/article/compose/{{ article.id }}/" aria-label="Edit">{{ article.title|default('[Untitled]') }}</a>
+								{% else %}
+									{{ article.title|default('[Untitled]') }}
+								{% endif %}
+							</td>
+							<td>
+								{{ article.date|date('M j Y') }}
+							</td>
+							<td>
+								{{ article.author }}
+							</td>
+							{% set meta = article.meta|json_decode %}
+							<td class="text-center">
+								<div class="dropdown">
+									<button class="btn btn-xs btn-default" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+										<span class="fa fa-caret-down"></span>
+									</button>
+									<ul class="dropdown-menu">
+										{% if can_edit %}
+											<li role="presentation"><a href="{{ site.path }}/admin/article/compose/{{ article.id }}/"><span class="fa fa-fw fa-pencil"></span> Edit</a></li>
+										{% endif %}
+										<li class="divider" role="separator"></li>
+										{% if can_edit %}
+											<li><a href="{{ site.path }}/admin/article/delete/{{ article.id }}/"><span class="fa fa-fw fa-trash"></span> Delete</a></li>
+										{% endif %}
+										<li><a href="{{ site.path }}/id/{{ article.id }}" target="_blank"><span class="fa fa-fw fa-external-link-square"></span> View</a></li>
+									</ul>
+								</div>
+							</td>
+							<td class="text-center">
+								{% if is_granted('ROLE_ADMIN') %}
+									<input class="checkbox" type="checkbox" name="id[]" value="{{ article.id }}">
+								{% endif %}
+							</td>
+						</tr>
+					{% else %}
+						<tr><td colspan="5">No results.</td></tr>
+					{% endfor %}
+				</tbody>
+			</table>
+			{% set taxonomyList = get_sections() %}
+			{% if is_granted('ROLE_ADMIN') %}
+				<div class="form-inline pull-right multi-action">
+					<select class="form-control" name="action" aria-label="With selected...">
+						<option value="" role="presentation">With selected...</option>
+						<option value="delete">Delete</option>
+						<option value="taxonomy-attach">Add to section</option>
+						<option value="taxonomy-detach">Remove from section</option>
+					</select>
+					<select class="form-control" name="taxonomy" aria-label="Sections">
+						<option role="presentation"></option>
+						{% for tax in taxonomyList %}
+							<option value="{{ tax.id }}">{{ tax.name }}</option>
+						{% endfor %}
+					</select>
+					<button class="btn btn-success" type="submit">Submit</button>
+				</div>
+			{% endif %}
+		</form>
+		{% if numPages > 1 %}
+			<div class="row">
+				<div class="col-md-12 text-center">
+					{% include 'pagination.twig' with { path: site.path ~ '/admin/article/' } %}
+				</div>
+			</div>
+		{% endif %}
+	</div>
+	<ul class="col-md-3 list-unstyled" aria-label="View by section">
+		{% import _self as macro %}
+		{{ macro.tree(taxonomyList, null) }}
+	</ul>
+{% endblock %}
+
+{% block nav_article %}
+	<li><a href="#">foo</a></li>
+{% endblock %}
+
+{% macro tree(taxonomy, id) %}
+	{% for tax in taxonomy %}
+		{% if tax.parent_id == id %}
+			{% import _self as macro %}
+			{% set children = macro.tree(taxonomy, tax.id) %}
+			<li><a href="{{ site.path }}/admin/article/?taxonomy={{ tax.slug }}">{{ tax.name }}</a>
+				{% if children %}
+					<ul class="list-unstyled">
+						{{ children }}
+					</ul>
+				{% endif %}
+			</li>
+		{% endif %}
+	{% endfor %}
+{% endmacro %}
+
+{% block title %}Articles{% endblock %}
