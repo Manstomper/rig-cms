@@ -16,22 +16,36 @@ final class ArticleController extends CoreController
 	public function indexAction()
 	{
 		$limit = 20;
-		$page = (int) $this->app['request']->get('page');
+		$page = (int) $this->getRequest()->get('page');
 
 		if ($page < 1)
 		{
 			$page = 1;
 		}
 
+		if ($this->getRequest()->get('orderby'))
+		{
+			$order = array(
+				$this->getRequest()->get('orderby') => 'ASC',
+			);
+		}
+		else
+		{
+			$order = array(
+				'date' => 'DESC',
+			);
+		}
+
 		$options = array(
-			'taxonomy' => array_filter(explode(',', $this->app['request']->get('taxonomy'))),
-			'filter' => $this->getSearchFilters(array('title', 'body')),
-			'order' => $this->app['request']->get('orderby') ? array($this->app['request']->get('orderby') => 'ASC') : array('date' => 'DESC'),
+			'order' => $order,
 			'page' => $page,
 			'limit' => $limit,
 		);
 
-		$articles = $this->model->get($options);
+		$taxonomy = array_filter(explode(',', $this->getRequest()->get('taxonomy')));
+		$q = $this->getRequest()->get('q');
+
+		$articles = $this->model->get($options, $taxonomy, $this->getRoleId(), $q);
 
 		return $this->app['twig']->render('admin/article.twig', array(
 			'articles' => $articles->getResult(),
@@ -42,21 +56,30 @@ final class ArticleController extends CoreController
 
 	public function composeAction()
 	{
-		$id = $this->app['request']->get('id');
+		$id = $this->getRequest()->get('id');
 
-		if ($this->app['request']->getMethod() === 'POST')
+		if ($this->getRequest()->getMethod() === 'POST')
 		{
-			$this->app['request']->request->set('user_id', $this->getUserToken()->id);
-			$success = $id ? $this->update() : $this->insert();
+			$this->getRequest()->request->set('user_id', $this->getUserToken()->id);
+
+			if ($id)
+			{
+				$success = $this->update();
+			}
+			else
+			{
+				$success = $this->insert();
+			}
 
 			if ($success)
 			{
 				$this->model->detachTaxonomy($this->data['id']);
-				$this->model->attachTaxonomy($this->data['id'], $this->app['request']->get('taxonomy'));
+				$this->model->attachTaxonomy($this->data['id'], $this->getRequest()->get('taxonomy'));
 
 				return $this->response('/admin/article/compose/' . $this->data['id'] . '/');
 			}
-			elseif ($this->isRest())
+
+			if ($this->isRest())
 			{
 				return $this->response();
 			}
@@ -93,14 +116,14 @@ final class ArticleController extends CoreController
 
 	public function deleteAction()
 	{
-		if ($this->app['request']->getMethod() === 'POST')
+		if ($this->getRequest()->getMethod() === 'POST')
 		{
 			$this->delete();
 
 			return $this->response('/admin/article/');
 		}
 
-		$article = $this->model->getById($this->app['request']->get('id'))->getResult();
+		$article = $this->model->getById($this->getRequest()->get('id'))->getResult();
 
 		if (!$article)
 		{
@@ -115,52 +138,41 @@ final class ArticleController extends CoreController
 
 	public function multieditAction()
 	{
-		$id = $this->app['request']->get('id');
-		$action = $this->app['request']->get('action');
+		$this->responseCode = 200;
 
-		$this->responseCode = 400;
-		$this->responseMessage = 'Nothing to do.';
-
-		if (!$id || !$action)
-		{
-			return $this->response('/admin/article/');
-		}
+		$id = $this->getRequest()->get('id');
+		$action = $this->getRequest()->get('action');
 
 		switch ($action)
 		{
 			case 'delete';
-				if ($this->delete())
+				if ($this->delete() === false)
 				{
-					$this->responseCode = 200;
+					$this->responseCode = 400;
 				}
 				break;
 
 			case 'taxonomy-attach';
-				if ($taxonomy = $this->app['request']->get('taxonomy'))
+				$taxonomy = $this->getRequest()->get('taxonomy');
+
+				if ($taxonomy && $this->model->attachTaxonomy($id, $taxonomy)->hasError())
 				{
-					if ($this->model->attachTaxonomy($id, $taxonomy)->hasError())
-					{
-						$this->responseCode = 500;
-					}
-					else
-					{
-						$this->responseCode = 200;
-					}
+					$this->responseCode = 500;
 				}
 				break;
 
 			case 'taxonomy-detach';
-				if ($taxonomy = $this->app['request']->get('taxonomy'))
+				$taxonomy = $this->getRequest()->get('taxonomy');
+
+				if ($taxonomy && $this->model->detachTaxonomy($id, $taxonomy)->hasError())
 				{
-					if ($this->model->detachTaxonomy($id, $taxonomy)->hasError())
-					{
-						$this->responseCode = 500;
-					}
-					else
-					{
-						$this->responseCode = 200;
-					}
+					$this->responseCode = 500;
 				}
+				break;
+
+			default:
+				$this->responseCode = 400;
+				$this->responseMessage = 'Nothing to do.';
 				break;
 		}
 

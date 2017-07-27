@@ -10,6 +10,11 @@ final class UserModel extends CoreModel
 		$this->table = 'rig_user';
 	}
 
+	public function getEntity()
+	{
+		return new UserEntity();
+	}
+
 	public function get(array $options = array())
 	{
 		$join = ' LEFT JOIN rig_user_role ON rig_user_role.user_id = rig_user.id'
@@ -55,15 +60,15 @@ final class UserModel extends CoreModel
 		return $this;
 	}
 
-	public function getAdmins()
+	public function getByRoleId($roledId)
 	{
 		$q = ' FROM ' . $this->table
 				. ' JOIN rig_user_role ON rig_user_role.user_id = rig_user.id'
-				. ' AND rig_user_role.role_id = 1'
+				. ' AND rig_user_role.role_id = ' . (int) $roledId
 				. ' WHERE rig_user.is_active = 1';
 
 		$this->count = (int) $this->db->query('SELECT COUNT(*)' . $q)->fetchColumn(0);
-		$this->result = $this->db->query('SELECT rig_user.id, rig_user.email, rig_user.name, rig_user.meta' . $q);
+		$this->result = $this->db->query('SELECT ' . $this->table . '.*' . $q);
 
 		return $this;
 	}
@@ -163,10 +168,5 @@ final class UserModel extends CoreModel
 		$this->result['salt'] = null;
 
 		return $this;
-	}
-
-	public function getEntity()
-	{
-		return new UserEntity();
 	}
 }

@@ -15,7 +15,7 @@
 				</tr></thead>
 				<tbody>
 					{% for comment in comments %}
-						<tr{% if not comment.visible %} class="warning"{% endif %}>
+						<tr{% if not comment.is_visible %} class="warning"{% endif %}>
 							<td>
 								{{ comment.author }}
 							</td>
@@ -23,7 +23,7 @@
 								<a href="{{ site.path }}/admin/comment/compose/{{ comment.id }}/" aria-label="Edit">{{ comment.body|concat(70) }}</a>
 							</td>
 							<td class="text-center">
-								{% if comment.visible %}
+								{% if comment.is_visible %}
 									<span class="sr-only">Yes</span>
 								{% else %}
 									<span class="fa fa-eye-slash"></span><span class="sr-only">No</span>
@@ -33,7 +33,7 @@
 								{{ comment.date|date('M j Y') }}
 							</td>
 							<td>
-								<a href="{{ site.path }}/id/{{ comment.article_id }}" target="_blank">{{ comment.article_title|concat(30) }}</a>
+								<a href="{{ site.path }}/?id={{ comment.article_id }}/" target="_blank">View article</a>
 							</td>
 							<td class="text-center">
 								<div class="dropdown">
@@ -43,7 +43,7 @@
 									<ul class="dropdown-menu">
 										<li>
 											<a href="{{ site.path }}/admin/comment/moderate/{{ comment.id }}/">
-												{% if comment.visible == 0 %}
+												{% if comment.is_visible == 0 %}
 													<span class="fa fa-fw fa-check"></span> Approve
 												{% else %}
 													<span class="fa fa-fw fa-eye-slash"></span> Hide

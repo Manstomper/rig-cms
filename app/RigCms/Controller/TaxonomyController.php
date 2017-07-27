@@ -16,7 +16,7 @@ final class TaxonomyController extends CoreController
 	public function indexAction()
 	{
 		$limit = 200;
-		$page = (int) $this->app['request']->get('page');
+		$page = (int) $this->getRequest()->get('page');
 
 		if ($page < 1)
 		{
@@ -24,7 +24,7 @@ final class TaxonomyController extends CoreController
 		}
 
 		$taxonomy = $this->model->get(array(
-			'orderby' => $this->app['request']->get('orderby'),
+			'orderby' => $this->getRequest()->get('orderby'),
 			'page' => $page,
 			'limit' => $limit,
 		));
@@ -38,11 +38,18 @@ final class TaxonomyController extends CoreController
 
 	public function composeAction()
 	{
-		$id = $this->app['request']->get('id');
+		$id = $this->getRequest()->get('id');
 
-		if ($this->app['request']->getMethod() === 'POST')
+		if ($this->getRequest()->getMethod() === 'POST')
 		{
-			$success = $id ? $this->update() : $this->insert();
+			if ($id)
+			{
+				$success = $this->update();
+			}
+			else
+			{
+				$success = $this->insert();
+			}
 
 			if ($success || $this->isRest())
 			{
@@ -69,14 +76,14 @@ final class TaxonomyController extends CoreController
 
 	public function deleteAction()
 	{
-		if ($this->app['request']->getMethod() === 'POST')
+		if ($this->getRequest()->getMethod() === 'POST')
 		{
 			$this->delete();
 
 			return $this->response('/admin/taxonomy/');
 		}
 
-		$taxonomy = $this->model->getById($this->app['request']->get('id'))->getResult();
+		$taxonomy = $this->model->getById($this->getRequest()->get('id'))->getResult();
 
 		if (!$taxonomy)
 		{

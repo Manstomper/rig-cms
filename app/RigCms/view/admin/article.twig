@@ -7,7 +7,6 @@
 				<thead><tr>
 					<th>Title</th>
 					<th>Date</th>
-					<th>Author</th>
 					<th class="text-center">Options</th>
 					<th>
 						{% if is_granted('ROLE_ADMIN') and articles %}
@@ -22,7 +21,7 @@
 						{% else %}
 							{% set can_edit = false %}
 						{% endif %}
-						<tr{% if article.role_id %} class="warning"{% endif %}>
+						<tr{% if article.role_id < 4 %} class="warning"{% endif %}>
 							<td>
 								{% if can_edit %}
 									<a href="{{ site.path }}/admin/article/compose/{{ article.id }}/" aria-label="Edit">{{ article.title|default('[Untitled]') }}</a>
@@ -32,9 +31,6 @@
 							</td>
 							<td>
 								{{ article.date|date('M j Y') }}
-							</td>
-							<td>
-								{{ article.author }}
 							</td>
 							{% set meta = article.meta|json_decode %}
 							<td class="text-center">

@@ -11,14 +11,16 @@
 	{% set start = 1 %}
 	{% set end = 5 %}
 {% endif %}
+
+{% set params = query_params() %}
+{% set separator = params ? '&' : '?' %}
+
 {% if path is not defined %}
-	{% set path = site.path ~ app.request.pathinfo %}
-	{% set separator = '?' %}
+	{% set path = site.path ~ params %}
 {% else %}
-	{% set params = query_params() %}
 	{% set path = path ~ params %}
-	{% set separator = params ? '&' : '?' %}
 {% endif %}
+
 {% set options = {
 	first: options.first|default('First'),
 	last: options.last|default('Last'),
@@ -26,6 +28,7 @@
 	previous: options.previous|default(false),
 	class: options.class|default('pagination'),
 } %}
+
 <ul class="{{ options.class }}" aria-label="Pagination">
 {% if start > 1 and options.first %}
 	<li><a href="{{ path }}">{{ options.first }}</a></li>

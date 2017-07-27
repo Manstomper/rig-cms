@@ -10,8 +10,20 @@ if (isset($_SERVER['HTTP_CLIENT_IP']) || isset($_SERVER['HTTP_X_FORWARDED_FOR'])
 $loader = require_once __DIR__ . '/../vendor/autoload.php';
 $loader->add('RigCms', __DIR__ . '/../app');
 
+/*
+$loader->add('DebugBar', 'c:\xampp\htdocs\dev\debugbar\vendor\maximebf\debugbar\src');
+
+// PHP DebugBar starts
+$debugbar = new \DebugBar\StandardDebugBar();
+$debugbarRenderer = $debugbar->getJavascriptRenderer();
+$debugbarRenderer->setBaseUrl('http://localhost/dev/debugbar/vendor/maximebf/debugbar/src/DebugBar/Resources/');
+// PHP DebugBar ends
+*/
+
 $app = new Silex\Application();
 
 require __DIR__ . '/../app/config_dev.php';
 
 $app->run();
+
+//echo $debugbarRenderer->renderHead() . $debugbarRenderer->render();

@@ -1,11 +1,10 @@
 /dev/
 /vendor/
-/web/dst/
+/app/config.php
+/app/config_dev.php
 /web/files/
 /web/img/
 /web/themes/
-/vendor/
-composer.json
 composer.lock
 composer.phar
 Thumbs.db

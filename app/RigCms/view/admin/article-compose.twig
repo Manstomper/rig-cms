@@ -138,16 +138,16 @@
 
 {% block styles %}
 	{% if user().meta.editor|default() == 'codemirror' %}
-		<link rel="stylesheet" href="{{ site.asset_path }}/assets/codemirror/codemirror.min.css">
+		<link rel="stylesheet" href="{{ site.path }}/assets/codemirror/codemirror.min.css">
 	{% endif %}
 	{{ parent() }}
 {% endblock %}
 
 {% block javascripts %}
 	{% if user().meta.editor|default() == 'codemirror' %}
-		<script src="{{ site.asset_path }}/assets/codemirror/codemirror.min.js"></script>
+		<script src="{{ site.path }}/assets/codemirror/codemirror.min.js"></script>
 	{% elseif user().meta.editor|default() == 'tinymce' %}
-		<script src="{{ site.asset_path }}/assets/tinymce/tinymce.min.js"></script>
+		<script src="{{ site.path }}/assets/tinymce/tinymce.min.js"></script>
 	{% endif %}
 	{{ parent() }}
 {% endblock %}

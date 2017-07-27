@@ -24,7 +24,7 @@ final class UserController extends CoreController
 
 		return $this->app['twig']->render('user/login.twig', array(
 			'email' => $this->app['session']->get('_security.last_username'),
-			'error' => $this->app['security.last_error']($this->app['request']),
+			'error' => $this->app['security.last_error']($this->getRequest()),
 		));
 	}
 
@@ -36,7 +36,7 @@ final class UserController extends CoreController
 	public function indexAction()
 	{
 		$limit = 20;
-		$page = (int) $this->app['request']->get('page');
+		$page = (int) $this->getRequest()->get('page');
 
 		if ($page < 1)
 		{
@@ -57,19 +57,19 @@ final class UserController extends CoreController
 
 	public function adminComposeAction()
 	{
-		$id = $this->app['request']->get('id');
+		$id = $this->getRequest()->get('id');
 		$user = $id ? $this->model->getById($id)->getResult() : (array) $this->model->getEntity();
 		$isLastAdmin = ($id && $user['role_id'] == 1 && $this->model->getAdmins()->getCount() <= 1) ? true : false;
 
-		if ($this->app['request']->getMethod() === 'POST')
+		if ($this->getRequest()->getMethod() === 'POST')
 		{
-			$newRoleId = $this->app['request']->get('role_id');
-			$plainPassword = $this->app['request']->get('password');
+			$newRoleId = $this->getRequest()->get('role_id');
+			$plainPassword = $this->getRequest()->get('password');
 			$this->hashPassword();
 
 			if ($isLastAdmin || $newRoleId == 1 || !$id)
 			{
-				$this->app['request']->request->set('is_active', true);
+				$this->getRequest()->request->set('is_active', true);
 			}
 
 			$success = $id ? $this->update() : $this->insert();
@@ -112,9 +112,9 @@ final class UserController extends CoreController
 			return $this->response('/admin/user/compose/' . $this->getUserToken()->id . '/');
 		}
 
-		if ($this->app['request']->getMethod() === 'POST')
+		if ($this->getRequest()->getMethod() === 'POST')
 		{
-			$this->app['request']->request->set('id', $this->getUserToken->id());
+			$this->getRequest()->request->set('id', $this->getUserToken()->id);
 
 			if ($this->update() || $this->isRest())
 			{
@@ -125,7 +125,7 @@ final class UserController extends CoreController
 		}
 		else
 		{
-			$user = $this->model->getById($this->getUserToken->id())->getResult();
+			$user = $this->model->getById($this->getUserToken()->id)->getResult();
 		}
 
 		return $this->app['twig']->render('admin/user-compose.twig', array(
@@ -135,7 +135,7 @@ final class UserController extends CoreController
 
 	public function deleteAction()
 	{
-		$user = $this->model->getById($this->app['request']->get('id'))->getResult();
+		$user = $this->model->getById($this->getRequest()->get('id'))->getResult();
 
 		if (!$user)
 		{
@@ -147,7 +147,7 @@ final class UserController extends CoreController
 			$this->app->abort(400, 'This user cannot be deleted.');
 		}
 
-		if ($this->app['request']->getMethod() === 'POST')
+		if ($this->getRequest()->getMethod() === 'POST')
 		{
 			$this->delete();
 
@@ -169,15 +169,15 @@ final class UserController extends CoreController
 	{
 		if ($this->isGranted('IS_AUTHENTICATED_FULLY'))
 		{
-			$this->app['security']->setToken(null);
-			$this->app['request']->getSession()->invalidate();
+			$this->app['security.token_storage']->setToken(null);
+			$this->getRequest()->getSession()->invalidate();
 
 			return $this->response('/reset-password/');
 		}
 
-		if ($this->app['request']->getMethod() === 'POST')
+		if ($this->getRequest()->getMethod() === 'POST')
 		{
-			$email = $this->app['request']->get('email');
+			$email = $this->getRequest()->get('email');
 			$token = $this->generateToken();
 
 			if ($this->model->forgotPassword($email, $token))
@@ -206,28 +206,26 @@ final class UserController extends CoreController
 	{
 		if ($this->isGranted('IS_AUTHENTICATED_FULLY'))
 		{
-			$this->app['security']->setToken(null);
-			$this->app['request']->getSession()->invalidate();
+			$this->app['security.token_storage']->setToken(null);
+			$this->getRequest()->getSession()->invalidate();
 
-			return $this->response('/reset-password/' . $this->app['request']->get('token') . '/');
+			return $this->response('/reset-password/' . $this->getRequest()->get('token') . '/');
 		}
 
-		if ($this->app['request']->getMethod() === 'POST')
+		if ($this->getRequest()->getMethod() === 'POST')
 		{
-			if ($this->model->resetPassword($this->app['request']->get('token'), $this->app['request']->get('email'), $this->hashPassword()))
+			if ($this->model->resetPassword($this->getRequest()->get('token'), $this->getRequest()->get('email'), $this->hashPassword()))
 			{
-				//$this->app['session']->getFlashBag()->add('message', 'Your password was successfully reset.');
 				$this->responseMessage = 'Your password was successfully reset.';
 
 				return $this->response('/login/');
 			}
 			else
 			{
-				//$this->app['session']->getFlashBag()->add('error', 'Failed to reset password.');
 				$this->responseCode = 400;
 				$this->responseMessage = 'Failed to reset password.';
 
-				return $this->response('/reset-password/' . $this->app['request']->get('token') . '/');
+				return $this->response('/reset-password/' . $this->getRequest()->get('token') . '/');
 			}
 		}
 
@@ -274,17 +272,17 @@ final class UserController extends CoreController
 
 	private function hashPassword()
 	{
-		if (!$this->app['request']->get('password'))
+		if (!$this->getRequest()->get('password'))
 		{
 			return;
 		}
 
 		$encoder = $this->app['security.encoder_factory']->getEncoder(new UserProvider($this->app['db']));
 		$salt = $this->generateToken();
-		$password = $encoder->encodePassword($this->app['request']->get('password'), $salt);
+		$password = $encoder->encodePassword($this->getRequest()->get('password'), $salt);
 
-		$this->app['request']->request->set('salt', $salt);
-		$this->app['request']->request->set('password', $password);
+		$this->getRequest()->request->set('salt', $salt);
+		$this->getRequest()->request->set('password', $password);
 
 		return array(
 			'password' => $password,

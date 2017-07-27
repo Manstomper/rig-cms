@@ -10,6 +10,28 @@ final class TaxonomyModel extends CoreModel
 		$this->table = 'rig_taxonomy';
 	}
 
+	public function getEntity()
+	{
+		return new TaxonomyEntity();
+	}
+
+	/*public function getFamily($slug)
+	{
+		$sth = $this->db->prepare('SELECT * FROM rig_taxonomy WHERE slug = :slug OR parent_id = (SELECT id FROM rig_taxonomy WHERE slug = :foo)');
+		//ORDER BY (CASE WHEN hierarchy IS NULL THEN 1 ELSE 0 END), hierarchy
+		$sth->execute(array(
+			':slug' => $slug,
+			':foo' => $slug,
+		));
+
+		$this->result = $sth;
+		$this->lastError = $sth->errorInfo();
+		$this->count = $sth->rowCount();
+		dump($this->count);
+
+		return $this;
+	}*/
+
 	public function getBySlug($slug)
 	{
 		if (is_array($slug))
@@ -18,15 +40,15 @@ final class TaxonomyModel extends CoreModel
 
 			foreach ($slug as $key => $val)
 			{
-				$params[':val' . $key] = $val;
+				$params[':slug' . $key] = $val;
 			}
 		}
 		else
 		{
-			$params = array(':val0' => $slug);
+			$params = array(':slug0' => $slug);
 		}
 
-		$sth = $this->db->prepare('SELECT * FROM rig_taxonomy WHERE slug IN (' . implode(', ', array_keys($params)) . ') ORDER BY (CASE WHEN hierarchy IS NULL THEN 1 ELSE 0 END), hierarchy');
+		$sth = $this->db->prepare('SELECT * FROM rig_taxonomy WHERE slug IN (' . implode(', ', array_keys($params)) . ')');
 		$sth->execute($params);
 
 		$this->result = $sth;
@@ -38,8 +60,7 @@ final class TaxonomyModel extends CoreModel
 	{
 		$sth = $this->db->prepare('SELECT rig_taxonomy.* FROM ' . $this->table
 				. ' JOIN rig_article_taxonomy ON rig_article_taxonomy.taxonomy_id = rig_taxonomy.id'
-				. ' AND rig_article_taxonomy.article_id = :id'
-				. ' ORDER BY (CASE WHEN hierarchy IS NULL THEN 1 ELSE 0 END), hierarchy');
+				. ' AND rig_article_taxonomy.article_id = :id');
 		$sth->execute(array(':id' => $id));
 
 		$this->result = $sth;
@@ -51,8 +72,7 @@ final class TaxonomyModel extends CoreModel
 	{
 		$sth = $this->db->prepare('SELECT rig_taxonomy.*, rig_article_taxonomy.article_id AS article_id FROM ' . $this->table
 				. ' LEFT JOIN rig_article_taxonomy ON rig_article_taxonomy.taxonomy_id = rig_taxonomy.id'
-				. ' AND rig_article_taxonomy.article_id = :id'
-				. ' ORDER BY (CASE WHEN hierarchy IS NULL THEN 1 ELSE 0 END), hierarchy');
+				. ' AND rig_article_taxonomy.article_id = :id');
 		$sth->execute(array(':id' => $id));
 
 		$this->result = $sth;
@@ -85,22 +105,10 @@ final class TaxonomyModel extends CoreModel
 		return $this;
 	}
 
-	public function getDefault()
-	{
-		$this->result = $this->db->query('SELECT * FROM rig_taxonomy WHERE is_default = 1 ORDER BY (CASE WHEN hierarchy IS NULL THEN 1 ELSE 0 END), hierarchy');
-
-		return $this;
-	}
-
 	public function getSyndicated()
 	{
 		$this->result = $this->db->query('SELECT slug FROM rig_taxonomy WHERE syndicate = 1');
 
 		return $this;
-	}
-
-	public function getEntity()
-	{
-		return new TaxonomyEntity();
 	}
 }

@@ -17,8 +17,23 @@ use RigCms\Controller\ArticleController;
 use RigCms\Controller\TaxonomyController;
 use RigCms\Controller\DiscussController;
 
-$app['db'] = new \PDO('mysql:host=' . $app['db']['host'] . ';dbname=' . $app['db']['dbname'] . ';charset=utf8', $app['db']['username'], $app['db']['password']);
+/*
+//PHP DebugBar starts
+$app['db'] = new \DebugBar\DataCollector\PDO\TraceablePDO(new \PDO('mysql:host=' . $app['db']['host'] . ';dbname=' . $app['db']['dbname'] . ';charset=utf8', $app['db']['username'], $app['db']['password']));
 $app['db']->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
+$debugbar->addCollector(new \DebugBar\DataCollector\PDO\PDOCollector($app['db']));
+//PHP DebugBar ends
+*/
+
+try
+{
+	$app['db'] = new \PDO('mysql:host=' . $app['db']['host'] . ';dbname=' . $app['db']['dbname'] . ';charset=utf8', $app['db']['username'], $app['db']['password']);
+	$app['db']->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
+}
+catch (\PDOException $e)
+{
+	die($e->getMessage());
+}
 
 $app->register(new ServiceControllerServiceProvider());
 $app->register(new SessionServiceProvider());
@@ -33,10 +48,10 @@ $app->register(new Silex\Provider\SecurityServiceProvider(), array(
 				'default_target_path' => '/admin/dashboard/',
 			),
 			'logout' => array('logout_path' => '/admin/logout'),
-			'users' => $app->share(function($app)
+			'users' => function($app)
 			{
 				return new UserProvider($app['db']);
-			}),
+			},
 			'anonymous' => true,
 		),
 	),
@@ -54,12 +69,12 @@ $app->register(new Silex\Provider\SecurityServiceProvider(), array(
 		array('^/admin', 'ROLE_ADMIN'),
 		array('/', 'IS_AUTHENTICATED_ANONYMOUSLY'),
 	),
-	'security.encoder_factory' => $app->share(function($app) {
+	'security.encoder_factory' => function($app) {
 		return new EncoderFactory(array(
 			'Symfony\Component\Security\Core\User\UserInterface' => $app['security.encoder.digest'],
 			'RigCms\Model\UserProvider' => new MessageDigestPasswordEncoder(),
 		));
-	}),
+	},
 ));
 
 $app->register(new TwigServiceProvider(), array(
@@ -75,23 +90,28 @@ $app->register(new TwigServiceProvider(), array(
 
 /*@TODO Do something with this*/
 
-$app['twig'] = $app->share($app->extend('twig', function ($twig, $app)
+$app['twig'] = $app->extend('twig', function ($twig, $app)
 {
 	$twig->addGlobal('site', $app['site']);
 
 	$twig->addFunction(new \Twig_SimpleFunction('is_granted', function($role) use ($app)
 	{
-		return $app['security']->isGranted($role);
+		return $app['public.controller']->isGranted($role);
+	}));
+
+	$twig->addFunction(new \Twig_SimpleFunction('get_flashbag', function($tag) use ($app)
+	{
+		return $app['session']->getFlashBag()->get($tag);
 	}));
 
 	$twig->addFunction(new \Twig_SimpleFunction('user', function() use ($app)
 	{
-		return $app['security']->getToken()->getUser();
+		return $app['public.controller']->getUserToken();
 	}));
 
 	$twig->addFunction(new \Twig_SimpleFunction('get_controller', function() use ($app)
 	{
-		$controller = str_replace('admin/', '', trim($app['request']->getPathInfo(), '/'));
+		$controller = str_replace('admin/', '', trim($app['public.controller']->getRequest()->getPathInfo(), '/'));
 
 		if (strpos($controller, '/'))
 		{
@@ -155,7 +175,7 @@ $app['twig'] = $app->share($app->extend('twig', function ($twig, $app)
 	{
 		$params = array();
 
-		foreach ($app['request']->query as $key => $val)
+		foreach ($app['public.controller']->getRequest()->query as $key => $val)
 		{
 			if ($key !== 'page')
 			{
@@ -211,16 +231,18 @@ $app['twig'] = $app->share($app->extend('twig', function ($twig, $app)
 	}));
 
 	return $twig;
-}));
+});
 
-$app->error(function (\Exception $e, $code) use ($app)
+/* @TODO do this better */
+
+$app->error(function (\Exception $e, $request, $code) use ($app)
 {
-	if ($app['debug'] or !$app['security']->getToken())
+	if ($app['debug'] or !$app['public.controller']->getUserToken())
 	{
 		return;
 	}
 
-	if ($this->isGranted('ROLE_PUBLISHER'))
+	if ($app['public.controller']->isGranted('ROLE_PUBLISHER'))
 	{
 		$message = $e->getMessage();
 	}
@@ -229,7 +251,7 @@ $app->error(function (\Exception $e, $code) use ($app)
 		$message = $code == 404 ? 'Page not found.' : 'An error has occurred.';
 	}
 
-	$controller = $app['request']->attributes->get('_controller');
+	$controller = $app['public.controller']->getRequest()->attributes->get('_controller');
 
 	if (is_string($controller) && strpos($controller, 'public.controller') === false)
 	{
@@ -242,60 +264,45 @@ $app->error(function (\Exception $e, $code) use ($app)
 
 	if ($app['twig']->getLoader()->exists($template . '.twig'))
 	{
-		return new Response($app['twig']->render($template . '.twig', array('code' => $code, 'message' => $message)));
+		return new Response($app['twig']->render($template . '.twig', array(
+			'code' => $code,
+			'message' => $message,
+		)));
 	}
 });
 
-$app['public.controller'] = $app->share(function($app) { return new PublicController($app); });
-$app['user.controller'] = $app->share(function($app) { return new UserController($app); });
-$app['article.controller'] = $app->share(function($app) { return new ArticleController($app); });
-$app['taxonomy.controller'] = $app->share(function($app) { return new TaxonomyController($app); });
-$app['discuss.controller'] = $app->share(function($app) { return new DiscussController($app); });
+$app['public.controller'] = function($app) { return new PublicController($app); };
+$app['user.controller'] = function($app) { return new UserController($app); };
+$app['article.controller'] = function($app) { return new ArticleController($app); };
+$app['taxonomy.controller'] = function($app) { return new TaxonomyController($app); };
+$app['discuss.controller'] = function($app) { return new DiscussController($app); };
 
-$app->get('/id/{id}', 'public.controller:singleAction');
-
-$app->get('/login', 'user.controller:loginAction');
 $app->get('/login/', 'user.controller:loginAction');
-$app->get('/reset-password/', 'user.controller:forgotPasswordAction');
-$app->post('/reset-password/', 'user.controller:forgotPasswordAction');
-$app->get('/reset-password/{token}/', 'user.controller:resetPasswordAction');
-$app->post('/reset-password/{token}/', 'user.controller:resetPasswordAction');
+$app->match('/reset-password/', 'user.controller:forgotPasswordAction')->method('GET|POST');
+$app->match('/reset-password/{token}/', 'user.controller:resetPasswordAction')->method('GET|POST');
 
 $app->get('/admin/dashboard/', 'user.controller:dashboardAction');
-$app->get('/admin', function() use ($app) { return $app->redirect($app['site']['path'] . '/admin/dashboard/', 301); });
 $app->get('/admin/', function() use ($app) { return $app->redirect($app['site']['path'] . '/admin/dashboard/', 301); });
 
 $app->get('/admin/article/', 'article.controller:indexAction');
 $app->post('/admin/article/multiedit/', 'article.controller:multieditAction');
-$app->get('/admin/article/compose/', 'article.controller:composeAction');
-$app->post('/admin/article/compose/', 'article.controller:composeAction');
-$app->get('/admin/article/compose/{id}/', 'article.controller:composeAction');
-$app->post('/admin/article/compose/{id}/', 'article.controller:composeAction');
-$app->get('/admin/article/delete/{id}/', 'article.controller:deleteAction');
-$app->post('/admin/article/delete/{id}/', 'article.controller:deleteAction');
+$app->match('/admin/article/compose/', 'article.controller:composeAction')->method('GET|POST');
+$app->match('/admin/article/compose/{id}/', 'article.controller:composeAction')->method('GET|POST');
+$app->match('/admin/article/delete/{id}/', 'article.controller:deleteAction')->method('GET|POST');
 
 $app->get('/admin/taxonomy/', 'taxonomy.controller:indexAction');
-$app->get('/admin/taxonomy/compose/', 'taxonomy.controller:composeAction');
-$app->post('/admin/taxonomy/compose/', 'taxonomy.controller:composeAction');
-$app->get('/admin/taxonomy/compose/{id}/', 'taxonomy.controller:composeAction');
-$app->post('/admin/taxonomy/compose/{id}/', 'taxonomy.controller:composeAction');
-$app->get('/admin/taxonomy/delete/{id}/', 'taxonomy.controller:deleteAction');
-$app->post('/admin/taxonomy/delete/{id}/', 'taxonomy.controller:deleteAction');
+$app->match('/admin/taxonomy/compose/', 'taxonomy.controller:composeAction')->method('GET|POST');
+$app->match('/admin/taxonomy/compose/{id}/', 'taxonomy.controller:composeAction')->method('GET|POST');
+$app->match('/admin/taxonomy/delete/{id}/', 'taxonomy.controller:deleteAction')->method('GET|POST');
 
 $app->get('/admin/comment/', 'discuss.controller:indexAction');
 $app->post('/admin/comment/', 'discuss.controller:multieditAction');
-$app->get('/admin/comment/compose/{id}/', 'discuss.controller:composeAction');
-$app->post('/admin/comment/compose/{id}/', 'discuss.controller:composeAction');
-$app->get('/admin/comment/delete/{id}/', 'discuss.controller:deleteAction');
-$app->post('/admin/comment/delete/{id}/', 'discuss.controller:deleteAction');
+$app->match('/admin/comment/compose/{id}/', 'discuss.controller:composeAction')->method('GET|POST');
+$app->match('/admin/comment/delete/{id}/', 'discuss.controller:deleteAction')->method('GET|POST');
 $app->get('/admin/comment/moderate/{id}/', 'discuss.controller:moderateAction');
 
 $app->get('/admin/user/', 'user.controller:indexAction');
-$app->get('/admin/user/edit/', 'user.controller:userEditAction');
-$app->post('/admin/user/edit/', 'user.controller:userEditAction');
-$app->get('/admin/user/compose/', 'user.controller:adminComposeAction');
-$app->post('/admin/user/compose/', 'user.controller:adminComposeAction');
-$app->get('/admin/user/compose/{id}/', 'user.controller:adminComposeAction');
-$app->post('/admin/user/compose/{id}/', 'user.controller:adminComposeAction');
-$app->get('/admin/user/delete/{id}/', 'user.controller:deleteAction');
-$app->post('/admin/user/delete/{id}/', 'user.controller:deleteAction');
+$app->match('/admin/user/edit/', 'user.controller:userEditAction')->method('GET|POST');
+$app->match('/admin/user/compose/', 'user.controller:adminComposeAction')->method('GET|POST');
+$app->match('/admin/user/compose/{id}/', 'user.controller:adminComposeAction')->method('GET|POST');
+$app->match('/admin/user/delete/{id}/', 'user.controller:deleteAction')->method('GET|POST');

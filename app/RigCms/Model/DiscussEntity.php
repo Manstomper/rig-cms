@@ -4,12 +4,12 @@ namespace RigCms\Model;
 
 class DiscussEntity
 {
-	public $id, $article_id, $parent_id, $author, $email, $body, $date, $visible;
+	public $id, $article_id, $parent_id, $author, $email, $body, $date, $is_visible;
 
 	public function __construct()
 	{
 		$this->date = date('Y-m-d H:i:s');
-		$this->visible = false;
+		$this->is_visible = false;
 	}
 
 	public function getFilters()
@@ -44,7 +44,7 @@ class DiscussEntity
 				return $value;
 			}),
 			'date' => array('default'),
-			'visible' => array('boolean'),
+			'is_visible' => array('boolean'),
 		);
 	}
 

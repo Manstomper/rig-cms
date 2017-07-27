@@ -17,23 +17,23 @@ final class DiscussController extends CoreController
 	public function indexAction()
 	{
 		$limit = 20;
-		$page = (int) $this->app['request']->get('page');
+		$page = (int) $this->getRequest()->get('page');
 
 		if ($page < 1)
 		{
 			$page = 1;
 		}
 
-		if ($this->app['request']->get('orderby'))
+		if ($this->getRequest()->get('orderby'))
 		{
 			$order = array(
-				$this->app['request']->get('orderby') => 'ASC',
+				$this->getRequest()->get('orderby') => 'ASC',
 			);
 		}
 		else
 		{
 			$order = array(
-				'visible' => 'ASC',
+				'is_visible' => 'ASC',
 				'date' => 'DESC',
 			);
 		}
@@ -55,11 +55,18 @@ final class DiscussController extends CoreController
 
 	public function composeAction()
 	{
-		$id = $this->app['request']->get('id');
+		$id = $this->getRequest()->get('id');
 
-		if ($this->app['request']->getMethod() === 'POST')
+		if ($this->getRequest()->getMethod() === 'POST')
 		{
-			$success = $id ? $this->update() : $this->insert();
+			if ($id)
+			{
+				$success = $this->update();
+			}
+			else
+			{
+				$success = $this->insert();
+			}
 
 			if ($success || $this->isRest())
 			{
@@ -85,7 +92,7 @@ final class DiscussController extends CoreController
 
 	public function moderateAction()
 	{
-		$this->model->moderate($this->app['request']->get('id'));
+		$this->model->moderate($this->getRequest()->get('id'));
 
 		if ($this->model->hasError())
 		{
@@ -102,14 +109,14 @@ final class DiscussController extends CoreController
 
 	public function deleteAction()
 	{
-		if ($this->app['request']->getMethod() === 'POST')
+		if ($this->getRequest()->getMethod() === 'POST')
 		{
 			$this->delete();
 
 			return $this->response('/admin/comment/');
 		}
 
-		$comment = $this->model->getById($this->app['request']->get('id'))->getResult();
+		$comment = $this->model->getById($this->getRequest()->get('id'))->getResult();
 
 		if (!$comment)
 		{
@@ -124,17 +131,17 @@ final class DiscussController extends CoreController
 
 	public function multieditAction()
 	{
-		if (!$this->app['request']->get('id'))
+		if (!$this->getRequest()->get('id'))
 		{
 			$this->app->abort(400, 'Nothing to do.');
 		}
 
-		if ($this->app['request']->get('action') === 'delete')
+		if ($this->getRequest()->get('action') === 'delete')
 		{
 			return $this->deleteAction();
 		}
 
-		if ($this->app['request']->get('action') === 'moderate')
+		if ($this->getRequest()->get('action') === 'moderate')
 		{
 			return $this->moderateAction();
 		}

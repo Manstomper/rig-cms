@@ -4,7 +4,7 @@ namespace RigCms\Model;
 
 class TaxonomyEntity
 {
-	public $id, $parent_id, $name, $slug, $hierarchy, $is_default, $syndicate;
+	public $id, $parent_id, $name, $slug, $syndicate;
 
 	public function __construct()
 	{
@@ -18,8 +18,6 @@ class TaxonomyEntity
 			'parent_id' => array('null'),
 			'name' => array('htmlspecialchars'),
 			'slug' => array('slug'),
-			'hierarchy' => array('null'),
-			'is_default' => array('boolean'),
 			'syndicate' => array('boolean'),
 		);
 	}
@@ -29,7 +27,6 @@ class TaxonomyEntity
 		return array(
 			'id' => array('required' => false),
 			'parent_id' => array('required' => false),
-			'hierarchy' => array('required' => false),
 		);
 	}
 }

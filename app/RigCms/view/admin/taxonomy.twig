@@ -6,14 +6,12 @@
 			<thead><tr>
 				<th>Name</th>
 				<th>Slug</th>
-				<th>Order</th>
-				<th>On front page</th>
 				<th>Syndicate</th>
 				<th class="text-center">Options</th>
 			</tr></thead>
 			<tbody>
 				{% import _self as macro %}
-				{% if numPages > 1 or app.request.get('orderby') %}
+				{% if numPages > 1 or app.request_stack.getCurrentRequest.get('orderby') %}
 					{% for tax in taxonomyList %}
 						{{ macro.row(tax, 0) }}
 					{% endfor %}
@@ -35,16 +33,6 @@
 		</td>
 		<td>
 			{{ tax.slug }}
-		</td>
-		<td class="text-center">
-			{{ tax.hierarchy }}
-		</td>
-		<td class="text-center">
-			{% if tax.is_default %}
-				<span class="fa fa-check" aria-label="Yes"></span>
-			{% else %}
-				<span class="sr-only">No</span>
-			{% endif %}
 		</td>
 		<td class="text-center">
 			{% if tax.syndicate %}

@@ -17,7 +17,6 @@ abstract class CoreController
 		$this->app = $app;
 		$this->responseCode = 200;
 		$this->responseMessage = '';
-		/*@TODO consider this: $this->responseMessage = array('message' => '', 'guruMeditation' => '');*/
 	}
 
 	public function articleModel()
@@ -40,19 +39,76 @@ abstract class CoreController
 		return new UserModel($this->app['db']);
 	}
 
+	public function getRequest()
+	{
+		return $this->app['request_stack']->getCurrentRequest();
+	}
+
 	public function isGranted($role)
 	{
-		return $this->app['security']->isGranted($role);
+		return $this->app['security.authorization_checker']->isGranted($role);
 	}
 
 	public function getUserToken()
 	{
-		return $this->app['security']->getToken()->getUser();
+		if ($this->app['security.token_storage']->getToken())
+		{
+			return $this->app['security.token_storage']->getToken()->getUser();
+		}
+	}
+
+	public function getRoleId()
+	{
+		if ($this->isGranted('ROLE_ADMIN'))
+		{
+			return 1;
+		}
+		elseif ($this->isGranted('ROLE_PUBLISHER'))
+		{
+			return 2;
+		}
+		elseif ($this->isGranted('ROLE_SUBSCRIBER'))
+		{
+			return 3;
+		}
+		else
+		{
+			return 4;
+		}
+	}
+
+	public function getRoleName($roleId)
+	{
+		switch ((int) $roleId)
+		{
+			case 1:
+				return 'ROLE_ADMIN';
+				break;
+
+			case 2:
+				return 'ROLE_PUBLISHER';
+				break;
+
+			case 3:
+				return 'ROLE_SUBSCRIBER';
+				break;
+
+			default:
+				return 'IS_AUTHENTICATED_ANONYMOUSLY';
+				break;
+		}
 	}
 
 	public function isRest()
 	{
-		return reset($this->app['request']->getAcceptableContentTypes()) === 'application/json' ? true : false;
+		$acceptableTypes = $this->getRequest()->getAcceptableContentTypes();
+
+		if (!empty($acceptableTypes[0]) && $acceptableTypes[0] === 'application/json')
+		{
+			return true;
+		}
+
+		return false;
 	}
 
 	public function hasError()
@@ -70,7 +126,7 @@ abstract class CoreController
 		return true;
 	}
 
-	protected function response($redirectTo = null)
+	protected function response($redirectTo = '')
 	{
 		if ($this->isRest())
 		{
@@ -85,63 +141,12 @@ abstract class CoreController
 			$this->app['session']->getFlashBag()->add(($this->hasError() ? 'error' : 'message'), $this->responseMessage);
 		}
 
-		return $this->app->redirect($this->app['site']['path'] . ($redirectTo ? $redirectTo : ''));
+		return $this->app->redirect($this->app['site']['path'] . $redirectTo);
 	}
 
 	public function generateToken()
 	{
 		return md5(uniqid() . rand(0, 1000));
-	}
-
-	public function getSearchFilters(array $columns = array())
-	{
-		$q = $this->app['request']->get('q');
-
-		if (empty($q) || strlen($q) <= 3)
-		{
-			return;
-		}
-
-		$terms = explode(' ', $q);
-		$count = count($terms);
-		$filters = array();
-
-		for ($i = 0; $i < $count; $i++)
-		{
-			$term = $terms[$i];
-
-			if (strpos($term, '"') === 0)
-			{
-				while (strrpos($term, '"') !== strlen($term) - 1)
-				{
-					$i++;
-
-					if ($i >= $count)
-					{
-						break;
-					}
-
-					$term .= ' ' . $terms[$i];
-
-				}
-
-				$term = trim(str_replace('"', '', $term));
-			}
-
-			foreach ($columns as $column)
-			{
-				$filters[] = array(
-					'relation' => 'OR',
-					'column' => $column,
-					'compare' => 'LIKE',
-					'value' => '%' . $term . '%',
-				);
-			}
-		}
-
-		$filters[0]['relation'] = 'AND';
-
-		return $filters;
 	}
 
 	protected function insert()
@@ -223,7 +228,7 @@ abstract class CoreController
 			$this->app->abort(403, 'This method cannot be accessed from the public controller.');
 		}
 
-		$this->model->delete($this->app['request']->get('id'));
+		$this->model->delete($this->getRequest()->get('id'));
 
 		if ($this->model->getCount() > 0 && !$this->model->hasError())
 		{
@@ -248,7 +253,7 @@ abstract class CoreController
 
 		foreach ($this->model->getEntity() as $column => $defaultValue)
 		{
-			$value = $this->app['request']->get($column);
+			$value = $this->getRequest()->get($column);
 
 			if (is_string($value))
 			{
@@ -298,7 +303,7 @@ abstract class CoreController
 				break;
 
 			case 'password':
-				return $this->app['request']->get('id') || (!$this->app['request']->get('id') && $value);
+				return $this->getRequest()->get('id') || (!$this->getRequest()->get('id') && $value);
 				break;
 
 			case 'integer':
@@ -312,7 +317,7 @@ abstract class CoreController
 		switch ($filter)
 		{
 			case 'boolean':
-				return (bool) $value;
+				return (bool) $value === false ? 0 : 1;
 				break;
 
 			case 'integer':
@@ -347,7 +352,7 @@ abstract class CoreController
 	{
 		if (!$value)
 		{
-			$value = $this->app['request']->get('title') ? $this->app['request']->get('title') : $this->app['request']->get('name');
+			$value = $this->getRequest()->get('title') ? $this->getRequest()->get('title') : $this->getRequest()->get('name');
 		}
 
 		if (function_exists('iconv') && mb_detect_encoding($value) == 'UTF-8')
@@ -367,7 +372,7 @@ abstract class CoreController
 
 	private function meta()
 	{
-		$data = $this->app['request']->get('meta');
+		$data = $this->getRequest()->get('meta');
 
 		if (!$data)
 		{

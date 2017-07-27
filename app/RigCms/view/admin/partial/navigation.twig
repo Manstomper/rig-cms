@@ -25,7 +25,7 @@
 						<ul class="nav navbar-nav nav-sub">
 							<li><a href="{{ site.path }}/admin/taxonomy/compose/">New section</a></li>
 							{% if numPages|default(0) == 1 %}
-								{% if app.request.get('orderby') %}
+								{% if app.request_stack.getCurrentRequest.get('orderby') %}
 									<li><a href="{{ site.path }}/admin/taxonomy/">Tree view</a></li>
 								{% else %}
 									<li><a href="{{ site.path }}/admin/taxonomy/?orderby=name">Sort by name</a></li>

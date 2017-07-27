@@ -7,83 +7,33 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PublicController extends CoreController
 {
-	public function __construct(Application $app)
+	public function indexAction($section)
 	{
-		parent::__construct($app);
-	}
+		$segments = array_filter(explode('/', trim($this->getRequest()->getPathInfo(), '/')));
 
-	public function indexAction()
-	{
-		$section = $this->app['request']->get('section');
-		$taxonomy = null;
-
-		if (!$section)
+		if (empty($segments) && !empty($section))
 		{
-			$section = current(explode('/', trim($this->app['request']->getPathInfo(), '/')));
+			$segments = array($section);
 		}
 
-		if (!$section)
-		{
-			$taxEntities = $this->taxonomyModel()->getDefault()->getResult()->fetchAll();
+		$taxonomy = $this->taxonomyModel()->getBySlug($segments)->getResult()->fetchAll();
+		$template = 'index';
 
-			foreach ($taxEntities as $val)
+		foreach ($segments as $key => $value)
+		{
+			if (!isset($taxonomy[$key]) || isset($taxonomy[$key - 1]) && $taxonomy[$key]['parent_id'] !== $taxonomy[$key - 1]['id'])
 			{
-				$taxonomy[] = $val['slug'];
+				$this->app->abort('404', 'Section not found.');
 			}
 
-			$template = 'index';
-		}
-		else
-		{
-			$subsection = $this->app['request']->get('subsection');
-
-			if (!$subsection)
+			if ($this->app['twig']->getLoader()->exists('section-' . $value . '.twig'))
 			{
-				$taxEntities = $this->taxonomyModel()->getBySlug($section)->getResult()->fetchAll();
-				$taxonomy = array($taxEntities[0]['slug']);
-
-				$template = 'section-' . $taxonomy[0];
-
-				if (!$this->app['twig']->getLoader()->exists($template . '.twig'))
-				{
-					$template = 'index';
-				}
-			}
-			else
-			{
-				$taxEntities = $this->taxonomyModel()->getBySlug(array($section, $subsection))->getResult()->fetchAll();
-
-				if (count($taxEntities) !== 2)
-				{
-					$this->app->abort('404', 'Section not found.');
-				}
-
-				if ($taxEntities[0]['parent_id'] === $taxEntities[1]['id'])
-				{
-					$taxEntities = array_reverse($taxEntities);
-				}
-
-				if ($taxEntities[0]['slug'] !== $section || $taxEntities[1]['slug'] !== $subsection || $taxEntities[1]['parent_id'] !== $taxEntities[0]['id'])
-				{
-					$this->app->abort('404', 'Section hierarchy is incorrect.');
-				}
-
-				$taxonomy = array($taxEntities[1]['slug']);
-				$template = 'section-' . $taxEntities[1]['slug'];
-
-				if (!$this->app['twig']->getLoader()->exists($template . '.twig'))
-				{
-					$template = 'section-' . $taxEntities[0]['slug'];
-
-					if (!$this->app['twig']->getLoader()->exists($template . '.twig'))
-					{
-						$template = 'index';
-					}
-				}
+				$template = 'section-' . $value;
 			}
 		}
 
-		$page = (int) $this->app['request']->get('page');
+		$limit = 5;
+		$page = (int) $this->getRequest()->get('page');
 
 		if ($page < 1)
 		{
@@ -91,74 +41,40 @@ class PublicController extends CoreController
 		}
 
 		$options = array(
-			'filter' => array(
-				array(
-					array(
-						'column' => 'expires',
-						'compare' => '>',
-						'value' => date('Y-m-d H:i:s'),
-					),
-					array(
-						'relation' => 'OR',
-						'column' => 'expires',
-						'compare' => 'IS NULL',
-					),
-				),
+			'order' => array(
+				'date' => 'DESC',
 			),
-			'taxonomy' => $taxonomy,
-			'order' => array('date' => 'DESC'),
 			'page' => $page,
-			'limit' => 5,
+			'limit' => $limit,
 		);
 
-		if (!$this->isGranted('ROLE_ADMIN'))
-		{
-			if ($this->isGranted('ROLE_SUBSCRIBER'))
-			{
-				$options['filter'][] = array(
-					array(
-						'column' => 'role_id',
-						'compare' => '>=',
-						'value' => ($this->isGranted('ROLE_PUBLISHER') ? 2 : 3),
-					),
-					array(
-						'relation' => 'OR',
-						'column' => 'role_id',
-						'compare' => 'IS NULL',
-					)
-				);
-			}
-			else
-			{
-				$options['filter'][] = array(
-					array(
-						'column' => 'role_id',
-						'compare' => 'IS NULL',
-					)
-				);
-			}
-		}
+		$tax = end($taxonomy);
+		$tax = array_filter(array($tax['slug']));
 
-		$articles = $this->articleModel()->get($options);
+		$articles = $this->articleModel()->get($options, $tax, $this->getRoleId());
 
 		return $this->app['twig']->render($template . '.twig', array(
 			'articles' => $articles->getResult(),
-			'section' => $taxEntities,
+			'section' => $taxonomy,
 			'count' => $articles->getCount(),
 			'page' => $page,
-			'numPages' => ceil($articles->getCount() / $options['limit']),
+			'numPages' => ceil($articles->getCount() / $limit),
 		));
 	}
 
-	public function singleAction()
+	/*@TODO think about taxonomy*/
+	public function articleAction()
 	{
-		if ($slug = $this->app['request']->get('slug'))
+		$id = $this->getRequest()->get('id');
+		$slug = $this->getRequest()->get('slug');
+
+		if ($id)
 		{
-			$article = $this->articleModel()->getBySlug($slug)->getResult();
+			$article = $this->articleModel()->getById($id)->getResult();
 		}
 		else
 		{
-			$article = $this->articleModel()->getById($this->app['request']->get('id'))->getResult();
+			$article = $this->articleModel()->getBySlug($slug)->getResult();
 		}
 
 		if (!$article)
@@ -166,17 +82,12 @@ class PublicController extends CoreController
 			$this->app->abort(404, 'Article not found.');
 		}
 
-		if ($article['role_name'] !== null && !$this->isGranted($article['role_name']))
+		if (!$this->isGranted($this->getRoleName($article['role_id'])))
 		{
-			if ($this->isGranted('IS_AUTHENTICATED_FULLY'))
-			{
-				$this->app->abort(403, 'You do not have sufficient privileges to view this article.');
-			}
-
 			$this->app->abort(401, 'This article is protected.');
 		}
 
-		if ($this->app['request']->getMethod() === 'POST')
+		if ($this->getRequest()->getMethod() === 'POST')
 		{
 			if (!empty($article['meta']['comments_disabled']))
 			{
@@ -184,7 +95,7 @@ class PublicController extends CoreController
 			}
 			else
 			{
-				$this->app['request']->request->set('article_id', $article['id']);
+				$this->getRequest()->request->set('article_id', $article['id']);
 
 				if ($this->processComment())
 				{
@@ -193,16 +104,25 @@ class PublicController extends CoreController
 			}
 		}
 
-		$template = 'single-' . $article['id'];
+		$article['section'] = array(
+			'slug' => $article['section_slug'],
+			'name' => $article['section_name'],
+		);
 
-		if (!$this->app['twig']->getLoader()->exists($template . '.twig'))
+		unset($article['section_slug']);
+		unset($article['section_name']);
+
+		//dump($article);
+
+		$template = 'article';
+
+		if ($this->app['twig']->getLoader()->exists('article-' . $article['id'] . '.twig'))
 		{
-			$template = 'single-section-' . $article['section_slug'];
-
-			if (!$this->app['twig']->getLoader()->exists($template . '.twig'))
-			{
-				$template = 'single';
-			}
+			$template = 'article-' . 'article-' . $article['id'];
+		}
+		elseif ($this->app['twig']->getLoader()->exists('article-section-' . $article['section']['slug'] . '.twig'))
+		{
+			$template = 'article-section-' . $article['section']['slug'];
 		}
 
 		return $this->app['twig']->render($template . '.twig', array(
@@ -213,7 +133,7 @@ class PublicController extends CoreController
 
 	public function templateAction()
 	{
-		$template = trim($this->app['request']->getPathInfo(), '/');
+		$template = trim($this->getRequest()->getPathInfo(), '/');
 
 		if (!$template)
 		{
@@ -225,8 +145,15 @@ class PublicController extends CoreController
 
 	public function searchAction()
 	{
+		$q = $this->getRequest()->get('q');
+
+		if (empty($q) || strlen($q) <= 3)
+		{
+			$this->app->abort(400, 'No search term entered, or search term is three characters or shorter.');
+		}
+
 		$limit = 10;
-		$page = (int) $this->app['request']->get('page');
+		$page = (int) $this->getRequest()->get('page');
 
 		if ($page < 1)
 		{
@@ -234,39 +161,17 @@ class PublicController extends CoreController
 		}
 
 		$options = array(
-			'filter' => array(
-				array(
-					'column' => 'role_id',
-					'compare' => 'IS NULL',
-				),
-				array(
-					array(
-						'column' => 'expires',
-						'compare' => '>',
-						'value' => date('Y-m-d H:i:s'),
-					),
-					array(
-						'relation' => 'OR',
-						'column' => 'expires',
-						'compare' => 'IS NULL',
-					),
-				),
-			),
 			'page' => $page,
 			'limit' => $limit,
 		);
 
-		$options['filter'][] = $this->getSearchFilters(array('title', 'body'));
+		$taxonomy = array_filter(explode(',', $this->getRequest()->get('taxonomy')));
 
-		if ($this->app['request']->get('taxonomy'))
-		{
-			$options['taxonomy'] = explode(',', $this->app['request']->get('taxonomy'));
-		}
-
-		$articles = $this->articleModel()->get($options);
+		$articles = $this->articleModel()->get($options, $taxonomy, $this->getRoleId(), $q);
 
 		return $this->app['twig']->render('search.twig', array(
 			'results' => $articles->getResult(),
+			'terms' => htmlspecialchars($q, ENT_QUOTES, 'UTF-8'),
 			'count' => $articles->getCount(),
 			'page' => $page,
 			'numPages' => ceil($articles->getCount() / $limit),
@@ -283,27 +188,11 @@ class PublicController extends CoreController
 		}
 
 		$articles = $this->articleModel()->get(array(
-			'filter' => array(
-					array(
-						'column' => 'role_id',
-						'compare' => 'IS NULL',
-					),
-					array(
-						array(
-							'column' => 'expires',
-							'compare' => '>',
-							'value' => date('Y-m-d H:i:s'),
-						),
-						array(
-							'relation' => 'OR',
-							'column' => 'expires',
-							'compare' => 'IS NULL',
-						),
-					),
-			),
 			'taxonomy' => $taxonomy,
 			'limit' => 5,
-			'order' => array('date' => 'DESC'),
+			'order' => array(
+				'date' => 'DESC',
+			),
 		))->getResult();
 
 		if ($articles)
@@ -321,7 +210,7 @@ class PublicController extends CoreController
 		$this->model = $this->discussModel();
 		$this->processRequestData();
 
-		if (!$this->app['request']->get('confirm') || isset($this->data['invalid']))
+		if (!$this->getRequest()->get('confirm') || isset($this->data['invalid']))
 		{
 			return false;
 		}
