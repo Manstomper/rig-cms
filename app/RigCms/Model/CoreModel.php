@@ -25,7 +25,7 @@ abstract class CoreModel
 
 		if ($this->count > 0)
 		{
-			$order = !empty($options['order']) ? $this->getOrder($options['order']) : $this->table . '.id ASC';
+			$order = !empty($options['order']) ? $this->getOrder($options['order']) : ' ORDER BY ' . $this->table . '.id ASC';
 			$limit = !empty($options['limit']) ? (int) $options['limit'] : 100;
 			$start = !empty($options['page']) ? ($options['page'] - 1) * $limit : 0;
 
@@ -167,7 +167,7 @@ abstract class CoreModel
 		{
 			if (property_exists($entity, $key))
 			{
-				$q[] = $key . ($val !== 'DESC' ? ' ASC' : ' DESC');
+				$q[] = $this->table . '.' . $key . ($val !== 'DESC' ? ' ASC' : ' DESC');
 			}
 		}
 

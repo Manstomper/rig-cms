@@ -43,11 +43,11 @@ $app->register(new Silex\Provider\SecurityServiceProvider(), array(
 		'main' => array(
 			'pattern' => '/',
 			'form' => array(
-				'login_path' => '/login',
-				'check_path' => '/login_check',
+				'login_path' => '/login/',
+				'check_path' => '/login_check/',
 				'default_target_path' => '/admin/dashboard/',
 			),
-			'logout' => array('logout_path' => '/admin/logout'),
+			'logout' => array('logout_path' => '/admin/logout/'),
 			'users' => function($app)
 			{
 				return new UserProvider($app['db']);
@@ -84,7 +84,7 @@ $app->register(new TwigServiceProvider(), array(
 	),
 	'twig.options' => array(
 		'autoescape' => false,
-		'cache' => false,
+		'cache' => ($app['debug'] ? false : 'cache/twig'),
 	),
 ));
 
@@ -93,6 +93,11 @@ $app->register(new TwigServiceProvider(), array(
 $app['twig'] = $app->extend('twig', function ($twig, $app)
 {
 	$twig->addGlobal('site', $app['site']);
+
+	$twig->addFunction(new \Twig_SimpleFunction('dump', function($object)
+	{
+		return dump($object);
+	}));
 
 	$twig->addFunction(new \Twig_SimpleFunction('is_granted', function($role) use ($app)
 	{
@@ -186,6 +191,11 @@ $app['twig'] = $app->extend('twig', function ($twig, $app)
 		return !empty($params) ? '?' . implode('&', $params) : '';
 	}));
 
+	$twig->addFunction(new \Twig_SimpleFunction('path_info', function() use ($app)
+	{
+    return $app['public.controller']->getRequest()->getPathInfo();
+	}));
+
 	$twig->addFilter(new \Twig_SimpleFilter('json_decode', function($value)
 	{
 		return json_decode($value, true);
@@ -233,11 +243,9 @@ $app['twig'] = $app->extend('twig', function ($twig, $app)
 	return $twig;
 });
 
-/* @TODO do this better */
-
 $app->error(function (\Exception $e, $request, $code) use ($app)
 {
-	if ($app['debug'] or !$app['public.controller']->getUserToken())
+	if ($app['debug'])
 	{
 		return;
 	}

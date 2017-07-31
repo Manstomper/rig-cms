@@ -46,7 +46,12 @@ abstract class CoreController
 
 	public function isGranted($role)
 	{
-		return $this->app['security.authorization_checker']->isGranted($role);
+    if ($this->getUserToken())
+    {
+      return $this->app['security.authorization_checker']->isGranted($role);
+    }
+
+    return false;
 	}
 
 	public function getUserToken()

@@ -15,23 +15,6 @@ final class TaxonomyModel extends CoreModel
 		return new TaxonomyEntity();
 	}
 
-	/*public function getFamily($slug)
-	{
-		$sth = $this->db->prepare('SELECT * FROM rig_taxonomy WHERE slug = :slug OR parent_id = (SELECT id FROM rig_taxonomy WHERE slug = :foo)');
-		//ORDER BY (CASE WHEN hierarchy IS NULL THEN 1 ELSE 0 END), hierarchy
-		$sth->execute(array(
-			':slug' => $slug,
-			':foo' => $slug,
-		));
-
-		$this->result = $sth;
-		$this->lastError = $sth->errorInfo();
-		$this->count = $sth->rowCount();
-		dump($this->count);
-
-		return $this;
-	}*/
-
 	public function getBySlug($slug)
 	{
 		if (is_array($slug))

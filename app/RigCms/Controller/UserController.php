@@ -59,7 +59,7 @@ final class UserController extends CoreController
 	{
 		$id = $this->getRequest()->get('id');
 		$user = $id ? $this->model->getById($id)->getResult() : (array) $this->model->getEntity();
-		$isLastAdmin = ($id && $user['role_id'] == 1 && $this->model->getAdmins()->getCount() <= 1) ? true : false;
+		$isLastAdmin = ($id && $user['role_id'] == 1 && $this->model->getByRoleId(1)->getCount() <= 1) ? true : false;
 
 		if ($this->getRequest()->getMethod() === 'POST')
 		{

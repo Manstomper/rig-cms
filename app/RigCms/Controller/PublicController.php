@@ -7,7 +7,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PublicController extends CoreController
 {
-	public function indexAction($section)
+	public function indexAction($section = null)
 	{
 		$segments = array_filter(explode('/', trim($this->getRequest()->getPathInfo(), '/')));
 
@@ -118,7 +118,7 @@ class PublicController extends CoreController
 
 		if ($this->app['twig']->getLoader()->exists('article-' . $article['id'] . '.twig'))
 		{
-			$template = 'article-' . 'article-' . $article['id'];
+			$template = 'article-' . $article['id'];
 		}
 		elseif ($this->app['twig']->getLoader()->exists('article-section-' . $article['section']['slug'] . '.twig'))
 		{

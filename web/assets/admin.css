@@ -161,6 +161,7 @@ textarea.tall + .CodeMirror {
 		z-index: 1;
 		width: 220px;
 		height: 100%;
+    overflow: hidden;
 	}
 
 	.navbar-header {

@@ -51,12 +51,11 @@
 				</li>
 			{% endif %}
 		</ul>
-		{% if is_granted('IS_AUTHENTICATED_FULLY') %}
 			<ul class="nav navbar-nav navbar-right">
-				<li>
-					<a href="{{ site.path }}/admin/logout"><span class="fa fa-fw fa-sign-out"></span> Sign out</a>
-				</li>
+        <li><a href="{{ site.path }}">{{ site.name }}</a></li>
+        {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+          <li><a href="{{ site.path }}/admin/logout"><span class="fa fa-fw fa-sign-out"></span> Sign out</a></li>
+        {% endif %}
 			</ul>
-		{% endif %}
 	</div>
 </nav>

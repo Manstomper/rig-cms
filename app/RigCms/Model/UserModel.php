@@ -75,7 +75,7 @@ final class UserModel extends CoreModel
 
 	public function getRoles()
 	{
-		$this->result = $this->db->query('SELECT * FROM rig_role ORDER BY id ASC');
+		$this->result = $this->db->query('SELECT * FROM rig_role WHERE rig_role.name != \'IS_AUTHENTICATED_ANONYMOUSLY\' ORDER BY id ASC');
 
 		return $this;
 	}
