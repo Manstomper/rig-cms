@@ -15,7 +15,7 @@ final class ArticleModel extends CoreModel
 		return new ArticleEntity();
 	}
 
-	public function get(array $options = array(), array $taxonomy = array(), $roleId, $searchTerms = '')
+	public function getArticles(array $options = array(), array $taxonomy = array(), $roleId = 4, $searchTerms = '')
 	{
 		$filter = '';
 		$params = array();

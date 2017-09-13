@@ -51,7 +51,7 @@ class PublicController extends CoreController
 		$tax = end($taxonomy);
 		$tax = array_filter(array($tax['slug']));
 
-		$articles = $this->articleModel()->get($options, $tax, $this->getRoleId());
+		$articles = $this->articleModel()->getArticles($options, $tax, $this->getRoleId());
 
 		return $this->app['twig']->render($template . '.twig', array(
 			'articles' => $articles->getResult(),
@@ -62,7 +62,7 @@ class PublicController extends CoreController
 		));
 	}
 
-	/*@TODO think about taxonomy*/
+	/*@TODO reconsider taxonomy*/
 	public function articleAction()
 	{
 		$id = $this->getRequest()->get('id');
@@ -112,8 +112,6 @@ class PublicController extends CoreController
 		unset($article['section_slug']);
 		unset($article['section_name']);
 
-		//dump($article);
-
 		$template = 'article';
 
 		if ($this->app['twig']->getLoader()->exists('article-' . $article['id'] . '.twig'))
@@ -137,7 +135,7 @@ class PublicController extends CoreController
 
 		if (!$template)
 		{
-			$template = 'front';
+			$template = 'home';
 		}
 
 		return $this->app['twig']->render('page-' . $template . '.twig');
@@ -167,7 +165,7 @@ class PublicController extends CoreController
 
 		$taxonomy = array_filter(explode(',', $this->getRequest()->get('taxonomy')));
 
-		$articles = $this->articleModel()->get($options, $taxonomy, $this->getRoleId(), $q);
+		$articles = $this->articleModel()->getArticles($options, $taxonomy, $this->getRoleId(), $q);
 
 		return $this->app['twig']->render('search.twig', array(
 			'results' => $articles->getResult(),
@@ -182,18 +180,16 @@ class PublicController extends CoreController
 	{
 		$taxonomy = array();
 
-		foreach ($this->taxonomyModel()->getSyndicated()->getResult() as $val)
+		foreach ($this->taxonomyModel()->getSyndicated()->getResult() as $value)
 		{
-			$taxonomy[] = $val['slug'];
+			$taxonomy[] = $value['slug'];
 		}
 
-		$articles = $this->articleModel()->get(array(
-			'taxonomy' => $taxonomy,
-			'limit' => 5,
+		$articles = $this->articleModel()->getArticles(array(
+			'limit' => 500,
 			'order' => array(
 				'date' => 'DESC',
-			),
-		))->getResult();
+			), $taxonomy))->getResult();
 
 		if ($articles)
 		{
@@ -201,37 +197,5 @@ class PublicController extends CoreController
 		}
 
 		return new Response($this->app['twig']->render('rss.twig', array('articles' => $articles)), 200, array('Content-Type' => 'text/xml'));
-	}
-
-	/*@TODO rethink this*/
-
-	private function processComment()
-	{
-		$this->model = $this->discussModel();
-		$this->processRequestData();
-
-		if (!$this->getRequest()->get('confirm') || isset($this->data['invalid']))
-		{
-			return false;
-		}
-
-		if ($this->discussModel()->insert($this->data)->getLastInsertId())
-		{
-			$title = $this->app['site']['name'] . ': New comment';
-			$message = 'A new comment is awaiting moderation.';
-
-			foreach ($this->userModel()->getAdmins()->getResult() as $admin)
-			{
-				mail($admin['email'], $title, $message);
-			}
-
-			$this->app['session']->getFlashBag()->add('comment_status', 'Thank you. Your comment is awaiting moderation.');
-		}
-		else
-		{
-			$this->app['session']->getFlashBag()->add('comment_status', 'Failed to add comment.');
-		}
-
-		return true;
 	}
 }

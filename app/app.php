@@ -10,12 +10,10 @@ use RigCms\Model\UserProvider;
 use RigCms\Model\UserModel;
 use RigCms\Model\ArticleModel;
 use RigCms\Model\TaxonomyModel;
-use RigCms\Model\DiscussModel;
 use RigCms\Controller\PublicController;
 use RigCms\Controller\UserController;
 use RigCms\Controller\ArticleController;
 use RigCms\Controller\TaxonomyController;
-use RigCms\Controller\DiscussController;
 
 /*
 //PHP DebugBar starts
@@ -79,8 +77,8 @@ $app->register(new Silex\Provider\SecurityServiceProvider(), array(
 
 $app->register(new TwigServiceProvider(), array(
 	'twig.path' => array(
-		__DIR__ . '/../app/RigCms/view',
-		__DIR__ . '/../web/themes/' . $app['site']['theme'],
+		__DIR__ . '/RigCms/view',
+		__DIR__ . '/../public_html/themes/' . $app['site']['theme'],
 	),
 	'twig.options' => array(
 		'autoescape' => false,
@@ -154,13 +152,6 @@ $app['twig'] = $app->extend('twig', function ($twig, $app)
 		return $taxonomyModel->get()->getResult()->fetchAll();
 	}));
 
-	$twig->addFunction(new \Twig_SimpleFunction('get_comments', function($id) use ($app)
-	{
-		$discussModel = new DiscussModel($app['db']);
-
-		return $discussModel->getByArticleId($id)->getResult();
-	}));
-
 	$twig->addFunction(new \Twig_SimpleFunction('tag_cloud', function($parentId = null) use ($app)
 	{
 		$taxonomyModel = new TaxonomyModel($app['db']);
@@ -193,7 +184,7 @@ $app['twig'] = $app->extend('twig', function ($twig, $app)
 
 	$twig->addFunction(new \Twig_SimpleFunction('path_info', function() use ($app)
 	{
-    return $app['public.controller']->getRequest()->getPathInfo();
+		return $app['public.controller']->getRequest()->getPathInfo();
 	}));
 
 	$twig->addFilter(new \Twig_SimpleFilter('json_decode', function($value)
@@ -283,7 +274,6 @@ $app['public.controller'] = function($app) { return new PublicController($app); 
 $app['user.controller'] = function($app) { return new UserController($app); };
 $app['article.controller'] = function($app) { return new ArticleController($app); };
 $app['taxonomy.controller'] = function($app) { return new TaxonomyController($app); };
-$app['discuss.controller'] = function($app) { return new DiscussController($app); };
 
 $app->get('/login/', 'user.controller:loginAction');
 $app->match('/reset-password/', 'user.controller:forgotPasswordAction')->method('GET|POST');
@@ -302,12 +292,6 @@ $app->get('/admin/taxonomy/', 'taxonomy.controller:indexAction');
 $app->match('/admin/taxonomy/compose/', 'taxonomy.controller:composeAction')->method('GET|POST');
 $app->match('/admin/taxonomy/compose/{id}/', 'taxonomy.controller:composeAction')->method('GET|POST');
 $app->match('/admin/taxonomy/delete/{id}/', 'taxonomy.controller:deleteAction')->method('GET|POST');
-
-$app->get('/admin/comment/', 'discuss.controller:indexAction');
-$app->post('/admin/comment/', 'discuss.controller:multieditAction');
-$app->match('/admin/comment/compose/{id}/', 'discuss.controller:composeAction')->method('GET|POST');
-$app->match('/admin/comment/delete/{id}/', 'discuss.controller:deleteAction')->method('GET|POST');
-$app->get('/admin/comment/moderate/{id}/', 'discuss.controller:moderateAction');
 
 $app->get('/admin/user/', 'user.controller:indexAction');
 $app->match('/admin/user/edit/', 'user.controller:userEditAction')->method('GET|POST');

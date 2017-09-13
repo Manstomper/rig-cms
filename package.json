@@ -1,0 +1,13 @@
+{
+  "name": "rig-cms",
+  "author": "Riina Granö",
+  "homepage": "http://manstomper.com/",
+  "development": "",
+  "display": "rigCMS",
+  "devDependencies": {
+    "gulp": "~3.9",
+    "gulp-concat": "~2.6",
+    "gulp-clean-css": "~3.7",
+    "gulp-uglify": "~3.0"
+  }
+}

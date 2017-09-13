@@ -1,3 +1,5 @@
+/*! rigCMS */
+
 function mceInit() {
 	tinymce.init({
 		selector: "[data-codeallowed='1']",

@@ -45,7 +45,7 @@ final class ArticleController extends CoreController
 		$taxonomy = array_filter(explode(',', $this->getRequest()->get('taxonomy')));
 		$q = $this->getRequest()->get('q');
 
-		$articles = $this->model->get($options, $taxonomy, $this->getRoleId(), $q);
+		$articles = $this->model->getArticles($options, $taxonomy, $this->getRoleId(), $q);
 
 		return $this->app['twig']->render('admin/article.twig', array(
 			'articles' => $articles->getResult(),

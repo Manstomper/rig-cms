@@ -2,15 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>{% block title %}{% endblock %}{% if block('title') is not empty %} | {% endif %}{% if page|default(1) > 1 %} Page {{ page }} | {% endif %}SilexBasedCMS</title>
+<title>{% block title %}{% endblock %}{% if block('title') is not empty %} | {% endif %}{% if page|default(1) > 1 %} Page {{ page }} | {% endif %}rigCMS</title>
 {% block styles %}
-<link rel="stylesheet" href="{{ site.path }}/assets/font-awesome/css/font-awesome.min.css">
-<link rel="stylesheet" href="{{ site.path }}/assets/bootstrap/css/bootstrap.min.css">
 <link rel="stylesheet" href="{{ site.path }}/assets/admin.min.css">
 {% endblock %}
 {% block javascripts %}
-<script src="{{ site.path }}/assets/jquery/jquery-2.2.3.min.js"></script>
-<script src="{{ site.path }}/assets/bootstrap/js/bootstrap.min.js"></script>
 <script src="{{ site.path }}/assets/admin.min.js"></script>
 {% endblock %}
 </head>

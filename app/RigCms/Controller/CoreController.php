@@ -6,7 +6,6 @@ use Silex\Application;
 use RigCms\Model\UserModel;
 use RigCms\Model\ArticleModel;
 use RigCms\Model\TaxonomyModel;
-use RigCms\Model\DiscussModel;
 
 abstract class CoreController
 {
@@ -29,11 +28,6 @@ abstract class CoreController
 		return new TaxonomyModel($this->app['db']);
 	}
 
-	public function discussModel()
-	{
-		return new DiscussModel($this->app['db']);
-	}
-
 	public function userModel()
 	{
 		return new UserModel($this->app['db']);
@@ -46,12 +40,12 @@ abstract class CoreController
 
 	public function isGranted($role)
 	{
-    if ($this->getUserToken())
-    {
-      return $this->app['security.authorization_checker']->isGranted($role);
-    }
+		if ($this->getUserToken())
+		{
+			return $this->app['security.authorization_checker']->isGranted($role);
+		}
 
-    return false;
+		return false;
 	}
 
 	public function getUserToken()
